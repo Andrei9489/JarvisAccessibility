@@ -1,10 +1,14 @@
 package com.example.jarvisaccessibility
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Typeface
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.speech.RecognizerIntent
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
@@ -18,6 +22,10 @@ class MainActivity : Activity() {
     private lateinit var inputCommand: EditText
     private lateinit var resultText: TextView
     private lateinit var statusText: TextView
+    private lateinit var historyText: TextView
+
+    private val speechRequestCode = 1001
+    private val commandHistory = mutableListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,11 +54,36 @@ class MainActivity : Activity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
+        val btnOverlayPermission = Button(this)
+        btnOverlayPermission.text = "Permite buton flotant"
+        btnOverlayPermission.setOnClickListener {
+            requestOverlayPermission()
+        }
+
+        val btnStartFloating = Button(this)
+        btnStartFloating.text = "Pornește buton flotant"
+        btnStartFloating.setOnClickListener {
+            startFloatingButton()
+        }
+
+        val btnStopFloating = Button(this)
+        btnStopFloating.text = "Oprește buton flotant"
+        btnStopFloating.setOnClickListener {
+            stopService(Intent(this, JarvisFloatingService::class.java))
+            Toast.makeText(this, "Buton flotant oprit", Toast.LENGTH_SHORT).show()
+        }
+
         inputCommand = EditText(this)
         inputCommand.hint = "Ex: deschide Chrome"
         inputCommand.setSingleLine(false)
         inputCommand.minLines = 2
         inputCommand.setPadding(20, 20, 20, 20)
+
+        val btnVoice = Button(this)
+        btnVoice.text = "Vorbește"
+        btnVoice.setOnClickListener {
+            startVoiceInput()
+        }
 
         val btnExecute = Button(this)
         btnExecute.text = "Execută comanda"
@@ -66,16 +99,36 @@ class MainActivity : Activity() {
             Toast.makeText(this, "Rezultat șters", Toast.LENGTH_SHORT).show()
         }
 
+        val btnClearHistory = Button(this)
+        btnClearHistory.text = "Clear istoric"
+        btnClearHistory.setOnClickListener {
+            commandHistory.clear()
+            updateHistory()
+            Toast.makeText(this, "Istoric șters", Toast.LENGTH_SHORT).show()
+        }
+
         val btnChrome = Button(this)
         btnChrome.text = "Deschide Chrome"
         btnChrome.setOnClickListener {
             executeDirectCommand("deschide Chrome")
         }
 
+        val btnYoutube = Button(this)
+        btnYoutube.text = "Deschide YouTube"
+        btnYoutube.setOnClickListener {
+            executeDirectCommand("deschide YouTube")
+        }
+
         val btnTermux = Button(this)
         btnTermux.text = "Deschide Termux"
         btnTermux.setOnClickListener {
             executeDirectCommand("deschide Termux")
+        }
+
+        val btnSearch = Button(this)
+        btnSearch.text = "Caută vremea azi"
+        btnSearch.setOnClickListener {
+            executeDirectCommand("caută vremea azi")
         }
 
         val btnReadScreen = Button(this)
@@ -115,9 +168,9 @@ class MainActivity : Activity() {
             deschide Chrome
             deschide YouTube
             deschide Termux
+            caută vremea azi
             apasă pe OK
             scrie salut
-            caută vremea azi
             scroll jos
             scroll sus
             citește ecranul
@@ -133,16 +186,28 @@ class MainActivity : Activity() {
         resultText = TextView(this)
         resultText.text = "Rezultat:"
         resultText.textSize = 16f
-        resultText.setPadding(0, 30, 0, 60)
+        resultText.setPadding(0, 30, 0, 30)
+
+        historyText = TextView(this)
+        historyText.text = "Istoric comenzi:\nGol"
+        historyText.textSize = 15f
+        historyText.setPadding(0, 20, 0, 80)
 
         layout.addView(title)
         layout.addView(statusText)
         layout.addView(btnAccessibility)
+        layout.addView(btnOverlayPermission)
+        layout.addView(btnStartFloating)
+        layout.addView(btnStopFloating)
         layout.addView(inputCommand)
+        layout.addView(btnVoice)
         layout.addView(btnExecute)
         layout.addView(btnClear)
+        layout.addView(btnClearHistory)
         layout.addView(btnChrome)
+        layout.addView(btnYoutube)
         layout.addView(btnTermux)
+        layout.addView(btnSearch)
         layout.addView(btnReadScreen)
         layout.addView(btnScrollDown)
         layout.addView(btnHome)
@@ -150,6 +215,7 @@ class MainActivity : Activity() {
         layout.addView(btnRecents)
         layout.addView(examples)
         layout.addView(resultText)
+        layout.addView(historyText)
 
         scrollView.addView(layout)
         setContentView(scrollView)
@@ -170,12 +236,75 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Permisiunea pentru buton flotant există deja", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun startFloatingButton() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            Toast.makeText(this, "Mai întâi permite butonul flotant", Toast.LENGTH_LONG).show()
+            requestOverlayPermission()
+            return
+        }
+
+        startService(Intent(this, JarvisFloatingService::class.java))
+        Toast.makeText(this, "Buton flotant pornit", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun startVoiceInput() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        intent.putExtra(
+            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+        )
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ro-RO")
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Spune comanda pentru Jarvis")
+
+        try {
+            startActivityForResult(intent, speechRequestCode)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(
+                this,
+                "Recunoașterea vocală nu este disponibilă pe telefon.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    @Deprecated("Deprecated Android API, dar funcționează pentru acest proiect simplu.")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == speechRequestCode && resultCode == RESULT_OK && data != null) {
+            val results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val spokenCommand = results?.firstOrNull()?.trim()
+
+            if (!spokenCommand.isNullOrBlank()) {
+                inputCommand.setText(spokenCommand)
+                inputCommand.setSelection(inputCommand.text.length)
+                executeDirectCommand(spokenCommand)
+            } else {
+                Toast.makeText(this, "Nu am detectat nicio comandă.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun executeJarvisCommand() {
         val command = inputCommand.text.toString().trim()
 
         if (command.isBlank()) {
-            resultText.text = "Rezultat: Scrie o comandă."
-            Toast.makeText(this, "Scrie o comandă", Toast.LENGTH_SHORT).show()
+            resultText.text = "Rezultat: Scrie sau rostește o comandă."
+            Toast.makeText(this, "Scrie sau rostește o comandă", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -184,6 +313,7 @@ class MainActivity : Activity() {
 
     private fun executeDirectCommand(command: String) {
         Toast.makeText(this, "Execut: $command", Toast.LENGTH_SHORT).show()
+        addToHistory(command)
 
         val service = JarvisAccessibilityService.instance
 
@@ -202,5 +332,34 @@ class MainActivity : Activity() {
         }
 
         updateServiceStatus()
+    }
+
+    private fun addToHistory(command: String) {
+        commandHistory.add(0, command)
+
+        if (commandHistory.size > 10) {
+            commandHistory.removeAt(commandHistory.lastIndex)
+        }
+
+        updateHistory()
+    }
+
+    private fun updateHistory() {
+        if (commandHistory.isEmpty()) {
+            historyText.text = "Istoric comenzi:\nGol"
+            return
+        }
+
+        val builder = StringBuilder()
+        builder.append("Istoric comenzi:\n")
+
+        commandHistory.forEachIndexed { index, command ->
+            builder.append(index + 1)
+                .append(". ")
+                .append(command)
+                .append("\n")
+        }
+
+        historyText.text = builder.toString().trim()
     }
 }

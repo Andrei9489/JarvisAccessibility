@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:allowBackup="true"
@@ -33,6 +34,10 @@
                 android:resource="@xml/jarvis_accessibility_service" />
 
         </service>
+
+        <service
+            android:name=".JarvisFloatingService"
+            android:exported="false" />
 
     </application>
 
