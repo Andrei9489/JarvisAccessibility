@@ -25,11 +25,9 @@ class JarvisAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // Momentan nu procesăm evenimente aici.
     }
 
     override fun onInterrupt() {
-        // Serviciul a fost întrerupt.
     }
 
     override fun onDestroy() {
@@ -164,21 +162,68 @@ class JarvisAccessibilityService : AccessibilityService() {
         }
     }
 
-    fun openAppByName(appName: String): Boolean {
+    fun openAppByName(appNameRaw: String): Boolean {
+        val appName = normalizeAppName(appNameRaw)
         val pm = packageManager
-        val apps = pm.getInstalledApplications(0)
 
-        val app = apps.firstOrNull {
-            val label = pm.getApplicationLabel(it).toString()
-            label.contains(appName, ignoreCase = true)
+        val knownPackages = mapOf(
+            "chrome" to "com.android.chrome",
+            "google chrome" to "com.android.chrome",
+            "youtube" to "com.google.android.youtube",
+            "gmail" to "com.google.android.gm",
+            "whatsapp" to "com.whatsapp",
+            "facebook" to "com.facebook.katana",
+            "messenger" to "com.facebook.orca",
+            "tiktok" to "com.zhiliaoapp.musically",
+            "instagram" to "com.instagram.android",
+            "telegram" to "org.telegram.messenger",
+            "settings" to "com.android.settings",
+            "setari" to "com.android.settings",
+            "setări" to "com.android.settings",
+            "termux" to "com.termux"
+        )
+
+        val directPackage = knownPackages[appName]
+        if (directPackage != null) {
+            val directIntent = pm.getLaunchIntentForPackage(directPackage)
+            if (directIntent != null) {
+                directIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(directIntent)
+                return true
+            }
+        }
+
+        val launchIntent = Intent(Intent.ACTION_MAIN, null)
+        launchIntent.addCategory(Intent.CATEGORY_LAUNCHER)
+
+        val apps = pm.queryIntentActivities(launchIntent, 0)
+
+        val match = apps.firstOrNull { info ->
+            val label = info.loadLabel(pm).toString()
+            normalizeAppName(label).contains(appName) ||
+                appName.contains(normalizeAppName(label)) ||
+                info.activityInfo.packageName.contains(appName, ignoreCase = true)
         } ?: return false
 
-        val launchIntent = pm.getLaunchIntentForPackage(app.packageName)
+        val intent = pm.getLaunchIntentForPackage(match.activityInfo.packageName)
             ?: return false
 
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(launchIntent)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
         return true
+    }
+
+    private fun normalizeAppName(value: String): String {
+        return value
+            .trim()
+            .lowercase()
+            .replace("ă", "a")
+            .replace("â", "a")
+            .replace("î", "i")
+            .replace("ș", "s")
+            .replace("ş", "s")
+            .replace("ț", "t")
+            .replace("ţ", "t")
     }
 
     fun scrollDown(): Boolean {
