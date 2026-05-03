@@ -1,154 +1,160 @@
 package com.example.jarvisaccessibility
 
+import android.content.Intent
+import android.net.Uri
+
 class JarvisController(
     private val service: JarvisAccessibilityService
 ) {
 
-    fun executeCommand(commandRaw: String): String {
-        val command = commandRaw.trim()
+    fun executeCommand(rawCommand: String): String {
+        val command = normalize(rawCommand)
 
         if (command.isBlank()) {
             return "Comandă goală."
         }
 
-        val lower = command.lowercase()
-
         return when {
-            lower.startsWith("deschide ") -> {
-                val appName = command.removePrefixIgnoreCase("deschide ").trim()
-                val ok = service.openAppByName(appName)
-
-                if (ok) "Am deschis $appName."
-                else "Nu am găsit aplicația $appName."
-            }
-
-            lower.startsWith("apasă pe ") -> {
-                val target = command.removePrefixIgnoreCase("apasă pe ").trim()
-                val ok = service.clickNodeByText(target)
-
-                if (ok) "Am apăsat pe $target."
-                else "Nu am găsit pe ecran: $target."
-            }
-
-            lower.startsWith("apasa pe ") -> {
-                val target = command.removePrefixIgnoreCase("apasa pe ").trim()
-                val ok = service.clickNodeByText(target)
-
-                if (ok) "Am apăsat pe $target."
-                else "Nu am găsit pe ecran: $target."
-            }
-
-            lower.startsWith("scrie ") -> {
-                val text = command.removePrefixIgnoreCase("scrie ").trim()
-                val ok = service.writeText(text)
-
-                if (ok) "Am scris: $text."
-                else "Nu există un câmp text selectat."
-            }
-
-            lower == "scroll jos" -> {
-                service.scrollDown()
-                "Am făcut scroll jos."
-            }
-
-            lower == "scroll sus" -> {
-                service.scrollUp()
-                "Am făcut scroll sus."
-            }
-
-            lower.startsWith("caută ") -> {
-                val query = command.removePrefixIgnoreCase("caută ").trim()
-                val wrote = service.writeText(query)
-
-                if (wrote) {
-                    service.tapEnterLikeAction()
-                    "Am căutat: $query."
+            command.startsWith("deschide ") -> {
+                val appName = rawCommand.substringAfter("deschide", "").trim()
+                if (appName.isBlank()) {
+                    "Spune ce aplicație să deschid."
                 } else {
-                    "Nu există un câmp de căutare selectat."
+                    val ok = service.openAppByName(appName)
+                    if (ok) "Am deschis: $appName" else "Nu am găsit aplicația: $appName"
                 }
             }
 
-            lower.startsWith("cauta ") -> {
-                val query = command.removePrefixIgnoreCase("cauta ").trim()
-                val wrote = service.writeText(query)
+            command.startsWith("cauta ") || command.startsWith("căută ") -> {
+                val query = rawCommand
+                    .replaceFirst("caută", "", ignoreCase = true)
+                    .replaceFirst("cauta", "", ignoreCase = true)
+                    .trim()
 
-                if (wrote) {
-                    service.tapEnterLikeAction()
-                    "Am căutat: $query."
+                if (query.isBlank()) {
+                    "Spune ce vrei să caut."
                 } else {
-                    "Nu există un câmp de căutare selectat."
+                    openGoogleSearch(query)
+                    "Caut pe Google: $query"
                 }
             }
 
-            lower == "citește ecranul" || lower == "citeste ecranul" -> {
+            command.startsWith("apasa pe ") || command.startsWith("apasă pe ") -> {
+                val text = rawCommand
+                    .replaceFirst("apasă pe", "", ignoreCase = true)
+                    .replaceFirst("apasa pe", "", ignoreCase = true)
+                    .trim()
+
+                if (text.isBlank()) {
+                    "Spune pe ce text să apăs."
+                } else {
+                    val ok = service.clickNodeByText(text)
+                    if (ok) "Am apăsat pe: $text" else "Nu am găsit pe ecran: $text"
+                }
+            }
+
+            command.startsWith("scrie ") -> {
+                val text = rawCommand.substringAfter("scrie", "").trim()
+
+                if (text.isBlank()) {
+                    "Spune ce text să scriu."
+                } else {
+                    val ok = service.writeText(text)
+                    if (ok) "Am scris: $text" else "Nu am găsit un câmp text activ."
+                }
+            }
+
+            command == "scroll jos" || command == "deruleaza jos" || command == "derulează jos" -> {
+                val ok = service.scrollDown()
+                if (ok) "Am făcut scroll jos." else "Nu am putut face scroll jos."
+            }
+
+            command == "scroll sus" || command == "deruleaza sus" || command == "derulează sus" -> {
+                val ok = service.scrollUp()
+                if (ok) "Am făcut scroll sus." else "Nu am putut face scroll sus."
+            }
+
+            command == "citeste ecranul" || command == "citește ecranul" -> {
                 val text = service.readScreenText()
-
-                if (text.isBlank()) "Nu am găsit text pe ecran."
-                else text
+                if (text.isBlank()) "Nu am găsit text pe ecran." else text
             }
 
-            lower == "înapoi" || lower == "inapoi" -> {
-                service.pressBack()
-                "Înapoi."
+            command == "inapoi" || command == "înapoi" || command == "back" -> {
+                val ok = service.pressBack()
+                if (ok) "Am apăsat Înapoi." else "Nu am putut apăsa Înapoi."
             }
 
-            lower == "home" || lower == "acasă" || lower == "acasa" -> {
-                service.pressHome()
-                "Home."
+            command == "home" || command == "acasă" || command == "acasa" -> {
+                val ok = service.pressHome()
+                if (ok) "Am mers la Home." else "Nu am putut merge la Home."
             }
 
-            lower == "recente" -> {
-                service.openRecents()
-                "Am deschis aplicațiile recente."
+            command == "recente" || command == "aplicatii recente" || command == "aplicații recente" -> {
+                val ok = service.openRecents()
+                if (ok) "Am deschis aplicațiile recente." else "Nu am putut deschide recente."
             }
 
-            lower.startsWith("tap ") -> {
-                val parts = lower.removePrefix("tap ").split(" ")
-
-                if (parts.size >= 2) {
-                    val x = parts[0].toIntOrNull()
-                    val y = parts[1].toIntOrNull()
-
-                    if (x != null && y != null) {
-                        service.tap(x, y)
-                        "Tap la coordonatele $x, $y."
-                    } else {
-                        "Coordonate invalide."
-                    }
-                } else {
+            command.startsWith("tap ") -> {
+                val parts = command.split(" ")
+                if (parts.size < 3) {
                     "Format corect: tap 500 800"
-                }
-            }
-
-            lower.startsWith("swipe ") -> {
-                val parts = lower.removePrefix("swipe ").split(" ")
-
-                if (parts.size >= 4) {
-                    val x1 = parts[0].toIntOrNull()
-                    val y1 = parts[1].toIntOrNull()
-                    val x2 = parts[2].toIntOrNull()
-                    val y2 = parts[3].toIntOrNull()
-
-                    if (x1 != null && y1 != null && x2 != null && y2 != null) {
-                        service.swipe(x1, y1, x2, y2)
-                        "Swipe de la $x1,$y1 la $x2,$y2."
-                    } else {
-                        "Coordonate invalide."
-                    }
                 } else {
-                    "Format corect: swipe 500 1200 500 300"
+                    val x = parts[1].toIntOrNull()
+                    val y = parts[2].toIntOrNull()
+
+                    if (x == null || y == null) {
+                        "Coordonate invalide. Exemplu: tap 500 800"
+                    } else {
+                        val ok = service.tap(x, y)
+                        if (ok) "Am făcut tap la $x, $y." else "Nu am putut face tap."
+                    }
                 }
             }
 
-            else -> "Comandă necunoscută: $command"
+            command.startsWith("swipe ") -> {
+                val parts = command.split(" ")
+                if (parts.size < 5) {
+                    "Format corect: swipe 500 1200 500 300"
+                } else {
+                    val startX = parts[1].toIntOrNull()
+                    val startY = parts[2].toIntOrNull()
+                    val endX = parts[3].toIntOrNull()
+                    val endY = parts[4].toIntOrNull()
+
+                    if (startX == null || startY == null || endX == null || endY == null) {
+                        "Coordonate invalide. Exemplu: swipe 500 1200 500 300"
+                    } else {
+                        val ok = service.swipe(startX, startY, endX, endY)
+                        if (ok) "Am făcut swipe." else "Nu am putut face swipe."
+                    }
+                }
+            }
+
+            else -> {
+                "Comandă necunoscută: $rawCommand"
+            }
         }
     }
 
-    private fun String.removePrefixIgnoreCase(prefix: String): String {
-        return if (this.lowercase().startsWith(prefix.lowercase())) {
-            this.substring(prefix.length)
-        } else {
-            this
-        }
+    private fun openGoogleSearch(query: String) {
+        val encoded = Uri.encode(query)
+        val url = "https://www.google.com/search?q=$encoded"
+
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        service.startActivity(intent)
+    }
+
+    private fun normalize(value: String): String {
+        return value
+            .trim()
+            .lowercase()
+            .replace("ă", "a")
+            .replace("â", "a")
+            .replace("î", "i")
+            .replace("ș", "s")
+            .replace("ş", "s")
+            .replace("ț", "t")
+            .replace("ţ", "t")
     }
 }

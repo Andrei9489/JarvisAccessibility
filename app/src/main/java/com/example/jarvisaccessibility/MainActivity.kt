@@ -23,12 +23,17 @@ class MainActivity : Activity() {
     private lateinit var resultText: TextView
     private lateinit var statusText: TextView
     private lateinit var historyText: TextView
+    private lateinit var updateManager: UpdateManager
+
+    private var lastReleaseUrl: String = "https://github.com/Andrei9489/JarvisAccessibility/releases"
 
     private val speechRequestCode = 1001
     private val commandHistory = mutableListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        updateManager = UpdateManager(this)
 
         val scrollView = ScrollView(this)
 
@@ -52,6 +57,18 @@ class MainActivity : Activity() {
         btnAccessibility.text = "Deschide Accessibility Settings"
         btnAccessibility.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+
+        val btnCheckUpdate = Button(this)
+        btnCheckUpdate.text = "Verifică update"
+        btnCheckUpdate.setOnClickListener {
+            checkUpdate()
+        }
+
+        val btnOpenUpdate = Button(this)
+        btnOpenUpdate.text = "Deschide pagina update"
+        btnOpenUpdate.setOnClickListener {
+            updateManager.openReleasePage(lastReleaseUrl)
         }
 
         val btnOverlayPermission = Button(this)
@@ -196,6 +213,8 @@ class MainActivity : Activity() {
         layout.addView(title)
         layout.addView(statusText)
         layout.addView(btnAccessibility)
+        layout.addView(btnCheckUpdate)
+        layout.addView(btnOpenUpdate)
         layout.addView(btnOverlayPermission)
         layout.addView(btnStartFloating)
         layout.addView(btnStopFloating)
@@ -224,6 +243,48 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         updateServiceStatus()
+    }
+
+    private fun checkUpdate() {
+        Toast.makeText(this, "Verific update...", Toast.LENGTH_SHORT).show()
+
+        updateManager.checkForUpdates { info, error ->
+            runOnUiThread {
+                if (error != null) {
+                    resultText.text = "Update error:\n$error"
+                    return@runOnUiThread
+                }
+
+                if (info == null) {
+                    resultText.text = "Nu am putut verifica update-ul."
+                    return@runOnUiThread
+                }
+
+                lastReleaseUrl = info.releaseUrl
+
+                resultText.text = if (info.hasUpdate) {
+                    """
+                    Update disponibil!
+
+                    Versiune curentă: ${info.currentVersionCode}
+                    Versiune nouă: ${info.latestVersionCode}
+                    Nume versiune: ${info.latestVersionName}
+
+                    Notes:
+                    ${info.notes}
+
+                    Apasă „Deschide pagina update”.
+                    """.trimIndent()
+                } else {
+                    """
+                    Aplicația este la zi.
+
+                    Versiune curentă: ${info.currentVersionCode}
+                    Ultima versiune: ${info.latestVersionCode}
+                    """.trimIndent()
+                }
+            }
+        }
     }
 
     private fun updateServiceStatus() {
