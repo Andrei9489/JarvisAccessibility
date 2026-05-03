@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,7 +17,7 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -26,8 +29,34 @@ jobs:
       - name: Build debug APK
         run: gradle assembleDebug
 
-      - name: Upload APK artifact
+      - name: Copy APK
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/debug/app-debug.apk release/app-debug.apk
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: JarvisAccessibility-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: release/app-debug.apk
+
+      - name: Read version name
+        id: version
+        run: |
+          VERSION_NAME=$(grep 'versionName' app/build.gradle | head -1 | sed 's/.*versionName = "\(.*\)".*/\1/')
+          VERSION_CODE=$(grep 'versionCode' app/build.gradle | head -1 | sed 's/.*versionCode = \(.*\)/\1/')
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version_name }}
+          name: Jarvis Accessibility v${{ steps.version.outputs.version_name }}
+          body: |
+            Jarvis Accessibility APK
+
+            Version code: ${{ steps.version.outputs.version_code }}
+            Version name: ${{ steps.version.outputs.version_name }}
+          files: release/app-debug.apk
+          make_latest: true
