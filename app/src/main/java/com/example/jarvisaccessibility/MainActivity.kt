@@ -11,6 +11,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 
 class MainActivity : Activity() {
 
@@ -30,14 +31,14 @@ class MainActivity : Activity() {
 
         val title = TextView(this)
         title.text = "Jarvis Accessibility"
-        title.textSize = 24f
+        title.textSize = 26f
         title.setTypeface(null, Typeface.BOLD)
         title.gravity = Gravity.CENTER
 
         statusText = TextView(this)
         statusText.textSize = 16f
         statusText.gravity = Gravity.CENTER
-        statusText.setPadding(0, 30, 0, 30)
+        statusText.setPadding(0, 25, 0, 25)
 
         val btnAccessibility = Button(this)
         btnAccessibility.text = "Deschide Accessibility Settings"
@@ -46,7 +47,7 @@ class MainActivity : Activity() {
         }
 
         inputCommand = EditText(this)
-        inputCommand.hint = "Scrie comanda: deschide Chrome"
+        inputCommand.hint = "Ex: deschide Chrome"
         inputCommand.setSingleLine(false)
         inputCommand.minLines = 2
         inputCommand.setPadding(20, 20, 20, 20)
@@ -55,6 +56,26 @@ class MainActivity : Activity() {
         btnExecute.text = "Execută comanda"
         btnExecute.setOnClickListener {
             executeJarvisCommand()
+        }
+
+        val btnClear = Button(this)
+        btnClear.text = "Clear rezultat"
+        btnClear.setOnClickListener {
+            resultText.text = "Rezultat:"
+            inputCommand.setText("")
+            Toast.makeText(this, "Rezultat șters", Toast.LENGTH_SHORT).show()
+        }
+
+        val btnChrome = Button(this)
+        btnChrome.text = "Deschide Chrome"
+        btnChrome.setOnClickListener {
+            executeDirectCommand("deschide Chrome")
+        }
+
+        val btnTermux = Button(this)
+        btnTermux.text = "Deschide Termux"
+        btnTermux.setOnClickListener {
+            executeDirectCommand("deschide Termux")
         }
 
         val btnReadScreen = Button(this)
@@ -69,17 +90,31 @@ class MainActivity : Activity() {
             executeDirectCommand("scroll jos")
         }
 
+        val btnHome = Button(this)
+        btnHome.text = "Home"
+        btnHome.setOnClickListener {
+            executeDirectCommand("home")
+        }
+
         val btnBack = Button(this)
         btnBack.text = "Înapoi"
         btnBack.setOnClickListener {
             executeDirectCommand("înapoi")
         }
 
+        val btnRecents = Button(this)
+        btnRecents.text = "Recente"
+        btnRecents.setOnClickListener {
+            executeDirectCommand("recente")
+        }
+
         val examples = TextView(this)
         examples.text = """
             Exemple comenzi:
-            
+
             deschide Chrome
+            deschide YouTube
+            deschide Termux
             apasă pe OK
             scrie salut
             caută vremea azi
@@ -98,16 +133,21 @@ class MainActivity : Activity() {
         resultText = TextView(this)
         resultText.text = "Rezultat:"
         resultText.textSize = 16f
-        resultText.setPadding(0, 30, 0, 30)
+        resultText.setPadding(0, 30, 0, 60)
 
         layout.addView(title)
         layout.addView(statusText)
         layout.addView(btnAccessibility)
         layout.addView(inputCommand)
         layout.addView(btnExecute)
+        layout.addView(btnClear)
+        layout.addView(btnChrome)
+        layout.addView(btnTermux)
         layout.addView(btnReadScreen)
         layout.addView(btnScrollDown)
+        layout.addView(btnHome)
         layout.addView(btnBack)
+        layout.addView(btnRecents)
         layout.addView(examples)
         layout.addView(resultText)
 
@@ -135,6 +175,7 @@ class MainActivity : Activity() {
 
         if (command.isBlank()) {
             resultText.text = "Rezultat: Scrie o comandă."
+            Toast.makeText(this, "Scrie o comandă", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -142,10 +183,13 @@ class MainActivity : Activity() {
     }
 
     private fun executeDirectCommand(command: String) {
+        Toast.makeText(this, "Execut: $command", Toast.LENGTH_SHORT).show()
+
         val service = JarvisAccessibilityService.instance
 
         if (service == null) {
-            resultText.text = "Rezultat: Serviciul Accessibility nu este activ. Apasă pe butonul de setări și activează Jarvis Accessibility."
+            resultText.text =
+                "Comandă: $command\n\nRezultat:\nServiciul Accessibility nu este activ. Activează Jarvis Accessibility din setări."
             updateServiceStatus()
             return
         }
@@ -154,7 +198,7 @@ class MainActivity : Activity() {
             val result = service.controller.executeCommand(command)
             resultText.text = "Comandă: $command\n\nRezultat:\n$result"
         } catch (e: Exception) {
-            resultText.text = "Eroare:\n${e.message}"
+            resultText.text = "Comandă: $command\n\nEroare:\n${e.message}"
         }
 
         updateServiceStatus()
