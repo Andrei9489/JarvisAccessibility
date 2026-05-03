@@ -26,6 +26,7 @@ class MainActivity : Activity() {
     private lateinit var updateManager: UpdateManager
 
     private var lastReleaseUrl: String = "https://github.com/Andrei9489/JarvisAccessibility/releases"
+    private var lastApkUrl: String = ""
 
     private val speechRequestCode = 1001
     private val commandHistory = mutableListOf<String>()
@@ -63,6 +64,12 @@ class MainActivity : Activity() {
         btnCheckUpdate.text = "Verifică update"
         btnCheckUpdate.setOnClickListener {
             checkUpdate()
+        }
+
+        val btnDownloadUpdate = Button(this)
+        btnDownloadUpdate.text = "Descarcă update"
+        btnDownloadUpdate.setOnClickListener {
+            downloadUpdate()
         }
 
         val btnOpenUpdate = Button(this)
@@ -214,6 +221,7 @@ class MainActivity : Activity() {
         layout.addView(statusText)
         layout.addView(btnAccessibility)
         layout.addView(btnCheckUpdate)
+        layout.addView(btnDownloadUpdate)
         layout.addView(btnOpenUpdate)
         layout.addView(btnOverlayPermission)
         layout.addView(btnStartFloating)
@@ -261,6 +269,7 @@ class MainActivity : Activity() {
                 }
 
                 lastReleaseUrl = info.releaseUrl
+                lastApkUrl = info.apkUrl
 
                 resultText.text = if (info.hasUpdate) {
                     """
@@ -273,7 +282,7 @@ class MainActivity : Activity() {
                     Notes:
                     ${info.notes}
 
-                    Apasă „Deschide pagina update”.
+                    Apasă „Descarcă update”.
                     """.trimIndent()
                 } else {
                     """
@@ -282,6 +291,27 @@ class MainActivity : Activity() {
                     Versiune curentă: ${info.currentVersionCode}
                     Ultima versiune: ${info.latestVersionCode}
                     """.trimIndent()
+                }
+            }
+        }
+    }
+
+    private fun downloadUpdate() {
+        if (lastApkUrl.isBlank()) {
+            resultText.text = "Mai întâi apasă „Verifică update”."
+            Toast.makeText(this, "Mai întâi verifică update-ul", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        Toast.makeText(this, "Descarc update...", Toast.LENGTH_LONG).show()
+        resultText.text = "Descarc update...\nTe rog așteaptă."
+
+        updateManager.downloadAndInstallApk(lastApkUrl) { error ->
+            runOnUiThread {
+                if (error != null) {
+                    resultText.text = "Eroare download update:\n$error"
+                } else {
+                    resultText.text = "Update descărcat. Confirmă instalarea în ecranul Android."
                 }
             }
         }
