@@ -9,12 +9,13 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.Button
+import kotlin.math.abs
 
 class JarvisFloatingService : Service() {
 
     private var windowManager: WindowManager? = null
     private var floatingButton: Button? = null
-    private var layoutParams: WindowManager.LayoutParams? = null
+    private var buttonParams: WindowManager.LayoutParams? = null
 
     private var initialX = 0
     private var initialY = 0
@@ -30,12 +31,35 @@ class JarvisFloatingService : Service() {
     private fun showFloatingButton() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
+        val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
+
+        buttonParams = WindowManager.LayoutParams(
+            150,
+            150,
+            overlayType,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = 20
+            y = 250
+        }
+
         floatingButton = Button(this).apply {
             text = "J"
             textSize = 18f
 
             setOnTouchListener { _, event ->
-                val params = layoutParams ?: return@setOnTouchListener false
+                val params = buttonParams
+                val button = floatingButton
+
+                if (params == null || button == null) {
+                    return@setOnTouchListener false
+                }
 
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
@@ -51,14 +75,14 @@ class JarvisFloatingService : Service() {
                         val deltaX = (event.rawX - initialTouchX).toInt()
                         val deltaY = (event.rawY - initialTouchY).toInt()
 
-                        if (kotlin.math.abs(deltaX) > 8 || kotlin.math.abs(deltaY) > 8) {
+                        if (abs(deltaX) > 8 || abs(deltaY) > 8) {
                             moved = true
                         }
 
                         params.x = initialX + deltaX
                         params.y = initialY + deltaY
 
-                        windowManager?.updateViewLayout(floatingButton, params)
+                        windowManager?.updateViewLayout(button, params)
                         true
                     }
 
@@ -74,25 +98,7 @@ class JarvisFloatingService : Service() {
             }
         }
 
-        val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            WindowManager.LayoutParams.TYPE_PHONE
-        }
-
-        layoutParams = WindowManager.LayoutParams(
-            150,
-            150,
-            overlayType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 20
-            y = 250
-        }
-
-        windowManager?.addView(floatingButton, layoutParams)
+        windowManager?.addView(floatingButton, buttonParams)
     }
 
     private fun openJarvis() {
@@ -104,8 +110,9 @@ class JarvisFloatingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
 
-        if (floatingButton != null) {
-            windowManager?.removeView(floatingButton)
+        val button = floatingButton
+        if (button != null) {
+            windowManager?.removeView(button)
             floatingButton = null
         }
     }
