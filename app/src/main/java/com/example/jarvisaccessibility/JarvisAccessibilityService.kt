@@ -25,9 +25,11 @@ class JarvisAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        // Momentan nu procesăm evenimente aici.
     }
 
     override fun onInterrupt() {
+        // Serviciul a fost întrerupt.
     }
 
     override fun onDestroy() {
@@ -35,7 +37,7 @@ class JarvisAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
-    fun tap(x: Int, y: Int) {
+    fun tap(x: Int, y: Int): Boolean {
         val path = Path()
         path.moveTo(x.toFloat(), y.toFloat())
 
@@ -43,10 +45,16 @@ class JarvisAccessibilityService : AccessibilityService() {
             .addStroke(GestureDescription.StrokeDescription(path, 0, 80))
             .build()
 
-        dispatchGesture(gesture, null, null)
+        return dispatchGesture(gesture, null, null)
     }
 
-    fun swipe(startX: Int, startY: Int, endX: Int, endY: Int, duration: Long = 500) {
+    fun swipe(
+        startX: Int,
+        startY: Int,
+        endX: Int,
+        endY: Int,
+        duration: Long = 500
+    ): Boolean {
         val path = Path()
         path.moveTo(startX.toFloat(), startY.toFloat())
         path.lineTo(endX.toFloat(), endY.toFloat())
@@ -55,7 +63,7 @@ class JarvisAccessibilityService : AccessibilityService() {
             .addStroke(GestureDescription.StrokeDescription(path, 0, duration))
             .build()
 
-        dispatchGesture(gesture, null, null)
+        return dispatchGesture(gesture, null, null)
     }
 
     fun writeText(text: String): Boolean {
@@ -75,17 +83,41 @@ class JarvisAccessibilityService : AccessibilityService() {
         val focusedNode = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
             ?: return false
 
-        return focusedNode.performAction(AccessibilityNodeInfo.ACTION_IME_ENTER)
+        return focusedNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
     }
 
     fun clickNodeByText(text: String): Boolean {
         val node = findNodeByText(text) ?: return false
-        return node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+
+        return if (node.isClickable) {
+            node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        } else {
+            clickFirstClickableParent(node)
+        }
     }
 
     fun clickNodeByViewId(viewId: String): Boolean {
         val node = findNodeByViewId(viewId) ?: return false
-        return node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+
+        return if (node.isClickable) {
+            node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        } else {
+            clickFirstClickableParent(node)
+        }
+    }
+
+    private fun clickFirstClickableParent(node: AccessibilityNodeInfo?): Boolean {
+        var current = node?.parent
+
+        while (current != null) {
+            if (current.isClickable) {
+                return current.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            }
+
+            current = current.parent
+        }
+
+        return false
     }
 
     fun findNodeByText(text: String): AccessibilityNodeInfo? {
@@ -133,15 +165,15 @@ class JarvisAccessibilityService : AccessibilityService() {
     }
 
     fun openAppByName(appName: String): Boolean {
-        val packageManager = packageManager
-        val apps = packageManager.getInstalledApplications(0)
+        val pm = packageManager
+        val apps = pm.getInstalledApplications(0)
 
         val app = apps.firstOrNull {
-            val label = packageManager.getApplicationLabel(it).toString()
+            val label = pm.getApplicationLabel(it).toString()
             label.contains(appName, ignoreCase = true)
         } ?: return false
 
-        val launchIntent = packageManager.getLaunchIntentForPackage(app.packageName)
+        val launchIntent = pm.getLaunchIntentForPackage(app.packageName)
             ?: return false
 
         launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -149,12 +181,12 @@ class JarvisAccessibilityService : AccessibilityService() {
         return true
     }
 
-    fun scrollDown() {
+    fun scrollDown(): Boolean {
         val displayMetrics = resources.displayMetrics
         val width = displayMetrics.widthPixels
         val height = displayMetrics.heightPixels
 
-        swipe(
+        return swipe(
             startX = width / 2,
             startY = (height * 0.75).toInt(),
             endX = width / 2,
@@ -163,12 +195,12 @@ class JarvisAccessibilityService : AccessibilityService() {
         )
     }
 
-    fun scrollUp() {
+    fun scrollUp(): Boolean {
         val displayMetrics = resources.displayMetrics
         val width = displayMetrics.widthPixels
         val height = displayMetrics.heightPixels
 
-        swipe(
+        return swipe(
             startX = width / 2,
             startY = (height * 0.25).toInt(),
             endX = width / 2,
@@ -177,15 +209,15 @@ class JarvisAccessibilityService : AccessibilityService() {
         )
     }
 
-    fun pressBack() {
-        performGlobalAction(GLOBAL_ACTION_BACK)
+    fun pressBack(): Boolean {
+        return performGlobalAction(GLOBAL_ACTION_BACK)
     }
 
-    fun pressHome() {
-        performGlobalAction(GLOBAL_ACTION_HOME)
+    fun pressHome(): Boolean {
+        return performGlobalAction(GLOBAL_ACTION_HOME)
     }
 
-    fun openRecents() {
-        performGlobalAction(GLOBAL_ACTION_RECENTS)
+    fun openRecents(): Boolean {
+        return performGlobalAction(GLOBAL_ACTION_RECENTS)
     }
 }
