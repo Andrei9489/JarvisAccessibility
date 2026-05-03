@@ -6,6 +6,7 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.Button
 
@@ -13,6 +14,13 @@ class JarvisFloatingService : Service() {
 
     private var windowManager: WindowManager? = null
     private var floatingButton: Button? = null
+    private var layoutParams: WindowManager.LayoutParams? = null
+
+    private var initialX = 0
+    private var initialY = 0
+    private var initialTouchX = 0f
+    private var initialTouchY = 0f
+    private var moved = false
 
     override fun onCreate() {
         super.onCreate()
@@ -25,10 +33,44 @@ class JarvisFloatingService : Service() {
         floatingButton = Button(this).apply {
             text = "J"
             textSize = 18f
-            setOnClickListener {
-                val intent = Intent(this@JarvisFloatingService, MainActivity::class.java)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(intent)
+
+            setOnTouchListener { _, event ->
+                val params = layoutParams ?: return@setOnTouchListener false
+
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        initialX = params.x
+                        initialY = params.y
+                        initialTouchX = event.rawX
+                        initialTouchY = event.rawY
+                        moved = false
+                        true
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        val deltaX = (event.rawX - initialTouchX).toInt()
+                        val deltaY = (event.rawY - initialTouchY).toInt()
+
+                        if (kotlin.math.abs(deltaX) > 8 || kotlin.math.abs(deltaY) > 8) {
+                            moved = true
+                        }
+
+                        params.x = initialX + deltaX
+                        params.y = initialY + deltaY
+
+                        windowManager?.updateViewLayout(floatingButton, params)
+                        true
+                    }
+
+                    MotionEvent.ACTION_UP -> {
+                        if (!moved) {
+                            openJarvis()
+                        }
+                        true
+                    }
+
+                    else -> false
+                }
             }
         }
 
@@ -38,19 +80,25 @@ class JarvisFloatingService : Service() {
             WindowManager.LayoutParams.TYPE_PHONE
         }
 
-        val params = WindowManager.LayoutParams(
+        layoutParams = WindowManager.LayoutParams(
             150,
             150,
             overlayType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
-        )
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = 20
+            y = 250
+        }
 
-        params.gravity = Gravity.TOP or Gravity.START
-        params.x = 20
-        params.y = 250
+        windowManager?.addView(floatingButton, layoutParams)
+    }
 
-        windowManager?.addView(floatingButton, params)
+    private fun openJarvis() {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
     }
 
     override fun onDestroy() {
