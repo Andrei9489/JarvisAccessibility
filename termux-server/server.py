@@ -10,9 +10,10 @@ app = Flask(__name__)
 
 START_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 LAST_COMMAND = ""
+AUTO_UPDATE_STATUS = "not_checked"
 
-LOCAL_SERVER_VERSION_CODE = 3
-LOCAL_SERVER_VERSION_NAME = "1.0.2"
+LOCAL_SERVER_VERSION_CODE = 4
+LOCAL_SERVER_VERSION_NAME = "1.0.3"
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/server_version.json"
 LOCAL_SERVER_PATH = os.path.abspath(__file__)
@@ -283,6 +284,42 @@ def interpret_command(text):
         "result": original
     }
 
+
+def auto_update_on_start():
+    global AUTO_UPDATE_STATUS
+
+    try:
+        remote = get_remote_server_info()
+        remote_code = int(remote.get("serverVersionCode", 0))
+        server_url = remote.get("serverUrl", "")
+
+        if remote_code <= LOCAL_SERVER_VERSION_CODE:
+            AUTO_UPDATE_STATUS = "Serverul este la zi."
+            return
+
+        if not server_url:
+            AUTO_UPDATE_STATUS = "Update disponibil, dar serverUrl lipsește."
+            return
+
+        new_server = download_text(server_url)
+
+        backup_path = LOCAL_SERVER_PATH + ".bak"
+        with open(backup_path, "w", encoding="utf-8") as backup:
+            with open(LOCAL_SERVER_PATH, "r", encoding="utf-8") as current:
+                backup.write(current.read())
+
+        with open(LOCAL_SERVER_PATH, "w", encoding="utf-8") as target:
+            target.write(new_server)
+
+        AUTO_UPDATE_STATUS = (
+            f"Update automat instalat la server {remote.get('serverVersionName', remote_code)}. "
+            "Repornește serverul Termux pentru activare."
+        )
+
+    except Exception as e:
+        AUTO_UPDATE_STATUS = f"Auto-update server eșuat: {e}"
+
+
 @app.route("/")
 def home():
     return """
@@ -312,6 +349,7 @@ def home():
             <h1>JARVIS TERMUX SERVER ONLINE</h1>
             <p>Status: active</p>
             <p>Version: """ + LOCAL_SERVER_VERSION_NAME + """</p>
+            <p>Auto update: """ + AUTO_UPDATE_STATUS + """</p>
             <p>Endpoints:</p>
             <p><code>/status</code></p>
             <p><code>/command?text=hello</code></p>
@@ -332,7 +370,8 @@ def status():
         "started_at": START_TIME,
         "last_command": LAST_COMMAND,
         "serverVersionCode": LOCAL_SERVER_VERSION_CODE,
-        "serverVersionName": LOCAL_SERVER_VERSION_NAME
+        "serverVersionName": LOCAL_SERVER_VERSION_NAME,
+        "autoUpdateStatus": AUTO_UPDATE_STATUS
     })
 
 @app.route("/command", methods=["GET", "POST"])
@@ -449,5 +488,7 @@ def update_install():
         })
 
 if __name__ == "__main__":
+    auto_update_on_start()
     print("Jarvis Termux Server running on http://127.0.0.1:8765")
+    print("Auto update status:", AUTO_UPDATE_STATUS)
     app.run(host="127.0.0.1", port=8765)

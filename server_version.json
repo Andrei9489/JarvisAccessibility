@@ -1,6 +1,6 @@
 {
-  "serverVersionCode": 3,
-  "serverVersionName": "1.0.2",
+  "serverVersionCode": 4,
+  "serverVersionName": "1.0.3",
   "serverUrl": "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/termux-server/server.py",
-  "notes": "Server Jarvis Termux cu timeout safety pentru Termux:API, ca status telefon și voce să nu blocheze serverul."
+  "notes": "Server Jarvis Termux cu auto-update la pornire și status autoUpdateStatus în /status."
 }

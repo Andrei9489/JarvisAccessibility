@@ -1,7 +1,7 @@
 {
-  "versionCode": 66,
-  "versionName": "1.7.4",
+  "versionCode": 67,
+  "versionName": "1.7.5",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Reparat deschiderea aplicațiilor instalate: Jarvis încearcă aplicația instalată înainte de fallback Accessibility."
+  "notes": "Adăugat auto-update la pornire pentru serverul Jarvis Termux localhost."
 }
