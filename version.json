@@ -1,7 +1,7 @@
 {
-  "versionCode": 68,
-  "versionName": "1.7.6",
+  "versionCode": 69,
+  "versionName": "1.7.7",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat Open App And Search Inside pentru comenzi vocale de tip deschide aplicația și caută conținut."
+  "notes": "Reparat fallback-ul greșit către Setări Accesibilitate pentru comenzile de aplicații instalate."
 }

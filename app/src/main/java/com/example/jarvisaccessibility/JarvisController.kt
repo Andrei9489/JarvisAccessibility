@@ -29,7 +29,16 @@ class JarvisController(
         if (
             normalizedCommandForApps == "listeaza aplicatiile instalate" ||
             normalizedCommandForApps == "listeaza aplicatii instalate" ||
-            normalizedCommandForApps == "lista aplicatii"
+            normalizedCommandForApps == "lista aplicatii" ||
+            normalizedCommandForApps == "lista de aplicatii" ||
+            normalizedCommandForApps == "listă de aplicații" ||
+            normalizedCommandForApps == "deschide lista de aplicatii" ||
+            normalizedCommandForApps == "deschide lista de aplicații" ||
+            normalizedCommandForApps == "deschide lista de placati" ||
+            normalizedCommandForApps == "deschide lista de placați" ||
+            normalizedCommandForApps.contains("lista de aplicatii") ||
+            normalizedCommandForApps.contains("lista aplicatii") ||
+            normalizedCommandForApps.contains("aplicatii instalate")
         ) {
             return installedAppsManager.listAppsText()
         }

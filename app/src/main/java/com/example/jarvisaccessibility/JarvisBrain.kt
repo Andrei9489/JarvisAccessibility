@@ -113,6 +113,14 @@ class JarvisBrain {
             text.contains("listeaza aplicațiile") ||
             text.contains("lista aplicatii") ||
             text.contains("listă aplicații") ||
+            text.contains("lista de aplicatii") ||
+            text.contains("listă de aplicații") ||
+            text.contains("lista de placați") ||
+            text.contains("lista de placati") ||
+            text.contains("deschide lista de aplicatii") ||
+            text.contains("deschide lista de aplicații") ||
+            text.contains("deschide lista de placați") ||
+            text.contains("deschide lista de placati") ||
             text.contains("ce aplicatii am") ||
             text.contains("ce aplicații am") ||
             text.contains("aplicatii instalate") ||
