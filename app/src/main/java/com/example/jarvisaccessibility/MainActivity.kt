@@ -52,17 +52,17 @@ class MainActivity : Activity() {
         versionText = normalText("")
         statusText = normalText("")
 
+        inputApiKey = EditText(this)
+        inputApiKey.hint = "API Key OpenRouter / Gemini / OpenAI"
+        inputApiKey.setSingleLine(true)
+        inputApiKey.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        inputApiKey.setPadding(20, 20, 20, 20)
+
         inputCommand = EditText(this)
         inputCommand.hint = "Scrie comanda aici..."
         inputCommand.setSingleLine(false)
         inputCommand.minLines = 2
         inputCommand.setPadding(20, 20, 20, 20)
-
-        inputApiKey = EditText(this)
-        inputApiKey.hint = "OpenAI API Key"
-        inputApiKey.setSingleLine(true)
-        inputApiKey.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        inputApiKey.setPadding(20, 20, 20, 20)
 
         resultText = normalText("Rezultat:")
         resultText.setPadding(0, 25, 0, 25)
@@ -79,25 +79,68 @@ class MainActivity : Activity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         })
 
-        addSection(layout, "AI API Key")
+        addSection(layout, "AI Provider + API Key")
         layout.addView(inputApiKey)
-        layout.addView(button("Salvează API Key") {
+
+        layout.addView(button("Folosește OpenRouter") {
+            val message = apiKeyManager.saveAiProvider("openrouter")
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Folosește Gemini") {
+            val message = apiKeyManager.saveAiProvider("gemini")
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Folosește OpenAI") {
+            val message = apiKeyManager.saveAiProvider("openai")
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Salvează OpenRouter API Key") {
+            val message = apiKeyManager.saveOpenRouterKey(inputApiKey.text.toString())
+            inputApiKey.setText("")
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Salvează Gemini API Key") {
+            val message = apiKeyManager.saveGeminiKey(inputApiKey.text.toString())
+            inputApiKey.setText("")
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Salvează OpenAI API Key") {
             val message = apiKeyManager.saveOpenAiKey(inputApiKey.text.toString())
             inputApiKey.setText("")
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         })
-        layout.addView(button("Șterge API Key") {
+
+        layout.addView(button("Șterge OpenRouter API Key") {
+            val message = apiKeyManager.clearOpenRouterKey()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Șterge Gemini API Key") {
+            val message = apiKeyManager.clearGeminiKey()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Șterge OpenAI API Key") {
             val message = apiKeyManager.clearOpenAiKey()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         })
-        layout.addView(button("Verifică API Key") {
-            resultText.text = if (apiKeyManager.hasOpenAiKey()) {
-                "API key este salvat."
-            } else {
-                "Nu există API key salvat."
-            }
+
+        layout.addView(button("Verifică AI Keys") {
+            resultText.text = apiKeyManager.getStatusText()
         })
 
         addSection(layout, "Update aplicație")
@@ -120,11 +163,13 @@ class MainActivity : Activity() {
         layout.addView(button("Vorbește") { startVoiceInput() })
         layout.addView(button("Execută comanda") { executeJarvisCommand() })
         layout.addView(button("Execută cu AI") { executeWithAi() })
+
         layout.addView(button("Clear rezultat") {
             resultText.text = "Rezultat:"
             inputCommand.setText("")
             Toast.makeText(this, "Rezultat șters", Toast.LENGTH_SHORT).show()
         })
+
         layout.addView(button("Clear istoric") {
             commandHistory.clear()
             updateHistory()
@@ -181,10 +226,16 @@ class MainActivity : Activity() {
             return
         }
 
-        val apiKey = apiKeyManager.getOpenAiKey()
+        val provider = apiKeyManager.getAiProvider()
+
+        val apiKey = when (provider) {
+            "openai" -> apiKeyManager.getOpenAiKey()
+            "gemini" -> apiKeyManager.getGeminiKey()
+            else -> apiKeyManager.getOpenRouterKey()
+        }
 
         if (apiKey.isBlank()) {
-            resultText.text = "Lipsește API key. Pune cheia în câmpul OpenAI API Key și apasă Salvează API Key."
+            resultText.text = "Lipsește API key pentru $provider. Pune cheia în câmp și apasă Salvează API Key."
             return
         }
 
@@ -195,16 +246,16 @@ class MainActivity : Activity() {
             return
         }
 
-        resultText.text = "AI procesează comanda..."
+        resultText.text = "AI procesează comanda cu provider: $provider..."
         Toast.makeText(this, "Trimit la AI...", Toast.LENGTH_SHORT).show()
 
-        val aiClient = AiClient(apiKey)
+        val aiClient = AiClient(apiKey, provider)
         val orchestrator = AiOrchestrator(aiClient, service.controller)
 
         orchestrator.executeWithAi(command) { result ->
             runOnUiThread {
                 resultText.text = result
-                addToHistory("AI: $command")
+                addToHistory("AI $provider: $command")
             }
         }
     }
@@ -278,8 +329,8 @@ class MainActivity : Activity() {
             Funcții:
             - comenzi scrise
             - comenzi vocale
-            - AI actions
-            - API key salvat local
+            - AI cu OpenRouter / Gemini / OpenAI
+            - API keys salvate local
             - citire ecran
             - control prin Accessibility
             - buton flotant

@@ -1,7 +1,7 @@
 {
-  "versionCode": 18,
-  "versionName": "1.2.3",
+  "versionCode": 20,
+  "versionName": "1.2.5",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Fix Gemini model: folosește gemini-1.5-flash-latest."
+  "notes": "Adăugat OpenRouter AI provider cu model free."
 }

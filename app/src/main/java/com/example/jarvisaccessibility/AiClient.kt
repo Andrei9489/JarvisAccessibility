@@ -7,13 +7,16 @@ import java.net.URL
 
 class AiClient(
     private val apiKey: String,
-    private val provider: String = "gemini"
+    private val provider: String = "openrouter"
 ) {
 
     private val openAiUrl = "https://api.openai.com/v1/chat/completions"
     private val openAiModel = "gpt-4o-mini"
 
-    private val geminiModel = "gemini-1.5-flash-latest"
+    private val openRouterUrl = "https://openrouter.ai/api/v1/chat/completions"
+    private val openRouterModel = "mistralai/mistral-7b-instruct:free"
+
+    private val geminiModel = "gemini-2.0-flash"
 
     fun sendCommandToAi(
         userCommand: String,
@@ -21,10 +24,10 @@ class AiClient(
     ) {
         Thread {
             try {
-                val response = if (provider.lowercase() == "openai") {
-                    sendToOpenAi(userCommand)
-                } else {
-                    sendToGemini(userCommand)
+                val response = when (provider.lowercase()) {
+                    "openai" -> sendToOpenAi(userCommand)
+                    "gemini" -> sendToGemini(userCommand)
+                    else -> sendToOpenRouter(userCommand)
                 }
 
                 callback(response, null)
@@ -35,7 +38,8 @@ class AiClient(
     }
 
     private fun sendToOpenAi(userCommand: String): String {
-        val body = buildOpenAiRequestBody(userCommand)
+        val body = buildChatRequestBody(openAiModel, userCommand)
+
         val response = postJson(
             urlString = openAiUrl,
             body = body,
@@ -45,7 +49,24 @@ class AiClient(
             )
         )
 
-        return parseOpenAiResponse(response)
+        return parseChatResponse(response)
+    }
+
+    private fun sendToOpenRouter(userCommand: String): String {
+        val body = buildChatRequestBody(openRouterModel, userCommand)
+
+        val response = postJson(
+            urlString = openRouterUrl,
+            body = body,
+            headers = mapOf(
+                "Authorization" to "Bearer $apiKey",
+                "Content-Type" to "application/json",
+                "HTTP-Referer" to "https://github.com/Andrei9489/JarvisAccessibility",
+                "X-Title" to "Jarvis Accessibility"
+            )
+        )
+
+        return parseChatResponse(response)
     }
 
     private fun sendToGemini(userCommand: String): String {
@@ -55,9 +76,7 @@ class AiClient(
         val response = postJson(
             urlString = url,
             body = body,
-            headers = mapOf(
-                "Content-Type" to "application/json"
-            )
+            headers = mapOf("Content-Type" to "application/json")
         )
 
         return parseGeminiResponse(response)
@@ -94,10 +113,11 @@ class AiClient(
         """.trimIndent()
     }
 
-    private fun buildOpenAiRequestBody(userCommand: String): String {
+    private fun buildChatRequestBody(model: String, userCommand: String): String {
         val json = JSONObject()
-        json.put("model", openAiModel)
+        json.put("model", model)
         json.put("temperature", 0)
+        json.put("max_tokens", 80)
 
         val messages = JSONArray()
 
@@ -120,7 +140,6 @@ class AiClient(
         val fullPrompt = systemPrompt() + "\n\nComanda utilizatorului:\n" + userCommand
 
         val json = JSONObject()
-
         val contents = JSONArray()
         val content = JSONObject()
         val parts = JSONArray()
@@ -128,10 +147,8 @@ class AiClient(
 
         part.put("text", fullPrompt)
         parts.put(part)
-
         content.put("parts", parts)
         contents.put(content)
-
         json.put("contents", contents)
 
         val generationConfig = JSONObject()
@@ -181,7 +198,7 @@ class AiClient(
         return response
     }
 
-    private fun parseOpenAiResponse(response: String): String {
+    private fun parseChatResponse(response: String): String {
         val json = JSONObject(response)
         val choices = json.getJSONArray("choices")
         val first = choices.getJSONObject(0)
