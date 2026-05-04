@@ -1,7 +1,9 @@
 {
-  "versionCode": 69,
-  "versionName": "1.7.7",
+  "versionCode": 70,
+  "versionName": "1.7.8",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Reparat fallback-ul greșit către Setări Accesibilitate pentru comenzile de aplicații instalate."
+  "serverVersionCode": 5,
+  "serverVersionName": "1.0.4",
+  "notes": "Upgrade sincronizat APK + localhost: pagina serverului afișează și versiunea aplicației Android."
 }

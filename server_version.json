@@ -1,6 +1,8 @@
 {
-  "serverVersionCode": 4,
-  "serverVersionName": "1.0.3",
+  "serverVersionCode": 5,
+  "serverVersionName": "1.0.4",
   "serverUrl": "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/termux-server/server.py",
-  "notes": "Server Jarvis Termux cu auto-update la pornire și status autoUpdateStatus în /status."
+  "androidAppVersionCode": 70,
+  "androidAppVersionName": "1.7.8",
+  "notes": "Upgrade sincronizat: localhost afișează versiunea APK Android și versiunea serverului Termux."
 }

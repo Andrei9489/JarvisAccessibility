@@ -12,8 +12,11 @@ START_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 LAST_COMMAND = ""
 AUTO_UPDATE_STATUS = "not_checked"
 
-LOCAL_SERVER_VERSION_CODE = 4
-LOCAL_SERVER_VERSION_NAME = "1.0.3"
+LOCAL_SERVER_VERSION_CODE = 5
+LOCAL_SERVER_VERSION_NAME = "1.0.4"
+
+ANDROID_APP_VERSION_CODE = 70
+ANDROID_APP_VERSION_NAME = "1.7.8"
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/server_version.json"
 LOCAL_SERVER_PATH = os.path.abspath(__file__)
@@ -348,7 +351,8 @@ def home():
         <div class="panel">
             <h1>JARVIS TERMUX SERVER ONLINE</h1>
             <p>Status: active</p>
-            <p>Version: """ + LOCAL_SERVER_VERSION_NAME + """</p>
+            <p>Jarvis Android App: """ + ANDROID_APP_VERSION_NAME + """ (""" + str(ANDROID_APP_VERSION_CODE) + """)</p>
+            <p>Jarvis Termux Server: """ + LOCAL_SERVER_VERSION_NAME + """ (""" + str(LOCAL_SERVER_VERSION_CODE) + """)</p>
             <p>Auto update: """ + AUTO_UPDATE_STATUS + """</p>
             <p>Endpoints:</p>
             <p><code>/status</code></p>
@@ -371,6 +375,8 @@ def status():
         "last_command": LAST_COMMAND,
         "serverVersionCode": LOCAL_SERVER_VERSION_CODE,
         "serverVersionName": LOCAL_SERVER_VERSION_NAME,
+        "androidAppVersionCode": ANDROID_APP_VERSION_CODE,
+        "androidAppVersionName": ANDROID_APP_VERSION_NAME,
         "autoUpdateStatus": AUTO_UPDATE_STATUS
     })
 
