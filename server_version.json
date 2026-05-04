@@ -1,6 +1,6 @@
 {
-  "serverVersionCode": 1,
-  "serverVersionName": "1.0.0",
+  "serverVersionCode": 2,
+  "serverVersionName": "1.0.1",
   "serverUrl": "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/termux-server/server.py",
-  "notes": "Server Jarvis Termux cu auto update."
+  "notes": "Server Jarvis Termux cu Server Command Brain pentru YouTube, Chrome, status telefon, voce și căutări."
 }

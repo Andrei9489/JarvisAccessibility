@@ -4,14 +4,15 @@ import subprocess
 import os
 import json
 import urllib.request
+import urllib.parse
 
 app = Flask(__name__)
 
 START_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 LAST_COMMAND = ""
 
-LOCAL_SERVER_VERSION_CODE = 1
-LOCAL_SERVER_VERSION_NAME = "1.0.0"
+LOCAL_SERVER_VERSION_CODE = 2
+LOCAL_SERVER_VERSION_NAME = "1.0.1"
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/server_version.json"
 LOCAL_SERVER_PATH = os.path.abspath(__file__)
@@ -37,6 +38,242 @@ def download_text(url):
 def get_remote_server_info():
     raw = download_text(REMOTE_VERSION_URL)
     return json.loads(raw)
+
+def normalize(text):
+    return (
+        text.strip()
+        .lower()
+        .replace("ă", "a")
+        .replace("â", "a")
+        .replace("î", "i")
+        .replace("ș", "s")
+        .replace("ş", "s")
+        .replace("ț", "t")
+        .replace("ţ", "t")
+    )
+
+def open_url(url):
+    safe_shell(f'am start -a android.intent.action.VIEW -d "{url}"')
+    return url
+
+def speak_text(text):
+    return safe_shell(f'termux-tts-speak "{text}"')
+
+def extract_after_phrases(text, phrases):
+    value = text.strip()
+
+    for phrase in phrases:
+        value = value.replace(phrase, "", 1).strip()
+
+    return value.strip(" .?,")
+
+def interpret_command(text):
+    original = text.strip()
+    clean = normalize(original)
+
+    if not original:
+        return {
+            "intent": "empty",
+            "reply": "No command received, sir.",
+            "action": "none",
+            "result": ""
+        }
+
+    if "status telefon" in clean or clean == "status" or "device status" in clean:
+        return {
+            "intent": "device_status",
+            "reply": "Checking device status, sir.",
+            "action": "device",
+            "result": {
+                "battery": safe_shell("termux-battery-status"),
+                "wifi": safe_shell("termux-wifi-connectioninfo"),
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        }
+
+    if "baterie" in clean or "battery" in clean:
+        return {
+            "intent": "battery",
+            "reply": "Checking battery, sir.",
+            "action": "battery",
+            "result": safe_shell("termux-battery-status")
+        }
+
+    if "wifi" in clean or "wi-fi" in clean:
+        return {
+            "intent": "wifi",
+            "reply": "Checking Wi-Fi, sir.",
+            "action": "wifi",
+            "result": safe_shell("termux-wifi-connectioninfo")
+        }
+
+    if clean.startswith("spune ") or clean.startswith("say "):
+        to_say = original
+        to_say = to_say.replace("spune", "", 1).replace("say", "", 1).strip()
+        if not to_say:
+            to_say = "At your service, sir."
+        output = speak_text(to_say)
+
+        return {
+            "intent": "speak",
+            "reply": f"Speaking, sir: {to_say}",
+            "action": "tts",
+            "result": output
+        }
+
+    if "youtube" in clean or "yootube" in clean or "you tube" in clean:
+        wants_search = (
+            "cauta" in clean or
+            "search" in clean or
+            "gaseste" in clean or
+            "melodie" in clean or
+            "muzica" in clean or
+            "stiri" in clean or
+            "content" in clean
+        )
+
+        if wants_search:
+            query = original
+            remove_phrases = [
+                "caută în youtube",
+                "cauta in youtube",
+                "caută pe youtube",
+                "cauta pe youtube",
+                "search youtube for",
+                "search on youtube",
+                "youtube",
+                "yootube",
+                "you tube",
+                "melodie",
+                "muzică",
+                "muzica",
+                "știri",
+                "stiri",
+                "content"
+            ]
+
+            for phrase in remove_phrases:
+                query = query.replace(phrase, "", 1).strip()
+
+            query = query.strip(" .?,")
+            if not query:
+                query = "YouTube"
+
+            url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote(query)
+            open_url(url)
+
+            return {
+                "intent": "youtube_search",
+                "reply": f"Searching YouTube for {query}, sir.",
+                "action": "open_url",
+                "result": url
+            }
+
+        url = "https://www.youtube.com"
+        open_url(url)
+
+        return {
+            "intent": "open_youtube",
+            "reply": "Opening YouTube, sir.",
+            "action": "open_url",
+            "result": url
+        }
+
+    if "chrome" in clean or "browser" in clean or "google" in clean:
+        if "cauta" in clean or "search" in clean or "gaseste" in clean:
+            query = original
+            for phrase in [
+                "caută în chrome",
+                "cauta in chrome",
+                "caută pe chrome",
+                "cauta pe chrome",
+                "search chrome for",
+                "search google for",
+                "chrome",
+                "google chrome",
+                "google",
+                "browser",
+                "caută",
+                "cauta",
+                "search",
+                "găsește",
+                "gaseste"
+            ]:
+                query = query.replace(phrase, "", 1).strip()
+
+            query = query.strip(" .?,")
+            if not query:
+                query = "Google"
+
+            url = "https://www.google.com/search?q=" + urllib.parse.quote(query)
+            open_url(url)
+
+            return {
+                "intent": "google_search",
+                "reply": f"Searching Google for {query}, sir.",
+                "action": "open_url",
+                "result": url
+            }
+
+        url = "https://www.google.com"
+        open_url(url)
+
+        return {
+            "intent": "open_chrome",
+            "reply": "Opening Chrome, sir.",
+            "action": "open_url",
+            "result": url
+        }
+
+    if clean.startswith("cauta ") or clean.startswith("search "):
+        query = original
+        query = query.replace("caută", "", 1).replace("cauta", "", 1).replace("search", "", 1).strip()
+        query = query.strip(" .?,")
+
+        if not query:
+            query = "Jarvis"
+
+        url = "https://www.google.com/search?q=" + urllib.parse.quote(query)
+        open_url(url)
+
+        return {
+            "intent": "google_search",
+            "reply": f"Searching Google for {query}, sir.",
+            "action": "open_url",
+            "result": url
+        }
+
+    if "update server" in clean or "verifica update server" in clean or "verifică update server" in clean:
+        try:
+            remote = get_remote_server_info()
+            remote_code = int(remote.get("serverVersionCode", 0))
+            return {
+                "intent": "server_update_check",
+                "reply": "Checking server update, sir.",
+                "action": "update_check",
+                "result": {
+                    "localVersionCode": LOCAL_SERVER_VERSION_CODE,
+                    "localVersionName": LOCAL_SERVER_VERSION_NAME,
+                    "remoteVersionCode": remote_code,
+                    "remoteVersionName": remote.get("serverVersionName", ""),
+                    "updateAvailable": remote_code > LOCAL_SERVER_VERSION_CODE,
+                    "notes": remote.get("notes", "")
+                }
+            }
+        except Exception as e:
+            return {
+                "intent": "server_update_check",
+                "reply": "I could not check the server update, sir.",
+                "action": "error",
+                "result": str(e)
+            }
+
+    return {
+        "intent": "unknown",
+        "reply": f"Command received, sir: {original}",
+        "action": "none",
+        "result": original
+    }
 
 @app.route("/")
 def home():
@@ -103,16 +340,15 @@ def command():
     text = text.strip()
     LAST_COMMAND = text
 
-    if not text:
-        return jsonify({
-            "ok": False,
-            "error": "No command text provided."
-        })
+    brain = interpret_command(text)
 
     return jsonify({
         "ok": True,
         "received": text,
-        "reply": f"Command received, sir: {text}"
+        "intent": brain.get("intent"),
+        "reply": brain.get("reply"),
+        "action": brain.get("action"),
+        "result": brain.get("result")
     })
 
 @app.route("/say")
@@ -122,7 +358,7 @@ def say():
     if not text:
         text = "At your service, sir."
 
-    output = safe_shell(f'termux-tts-speak "{text}"')
+    output = speak_text(text)
 
     return jsonify({
         "ok": True,
