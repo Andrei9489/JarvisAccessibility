@@ -8,7 +8,9 @@ class JarvisController(
 ) {
 
     private val customCommandManager = CustomCommandManager(service)
-    private val appSafetyManager = AppSafetyManager()
+    private val appSafetyManager = AppSafetyManager(service)
+    private val customBlockedAppsManager = CustomBlockedAppsManager(service)
+    private val customAllowedAppsManager = CustomAllowedAppsManager(service)
 
     fun executeCommand(rawCommand: String): String {
         val original = rawCommand.trim()
@@ -19,6 +21,94 @@ class JarvisController(
         }
 
         return when {
+
+
+            command.startsWith("permite aplicatia ") ||
+                command.startsWith("permite aplicația ") ||
+                command.startsWith("permite aplicaţia ") -> {
+                val appName = original
+                    .replaceFirst("permite aplicația", "", ignoreCase = true)
+                    .replaceFirst("permite aplicatia", "", ignoreCase = true)
+                    .replaceFirst("permite aplicaţia", "", ignoreCase = true)
+                    .trim()
+
+                if (appSafetyManager.isBlockedAppName(appName)) {
+                    "Nu pot permite această aplicație deoarece este blocată pentru siguranță: $appName"
+                } else {
+                    customAllowedAppsManager.allowApp(appName)
+                }
+            }
+
+            command.startsWith("sterge aplicatia permisa ") ||
+                command.startsWith("șterge aplicația permisă ") ||
+                command.startsWith("sterge aplicația permisă ") ||
+                command.startsWith("șterge aplicatia permisa ") -> {
+                val appName = original
+                    .replaceFirst("șterge aplicația permisă", "", ignoreCase = true)
+                    .replaceFirst("sterge aplicatia permisa", "", ignoreCase = true)
+                    .replaceFirst("sterge aplicația permisă", "", ignoreCase = true)
+                    .replaceFirst("șterge aplicatia permisa", "", ignoreCase = true)
+                    .trim()
+
+                customAllowedAppsManager.removeAllowedApp(appName)
+            }
+
+            command == "listeaza aplicatii permise custom" ||
+                command == "listează aplicații permise custom" -> {
+                customAllowedAppsManager.listCustomAllowedApps()
+            }
+
+            command.startsWith("este permisa ") ||
+                command.startsWith("este permisă ") -> {
+                val appName = original
+                    .replaceFirst("este permisă", "", ignoreCase = true)
+                    .replaceFirst("este permisa", "", ignoreCase = true)
+                    .trim()
+
+                if (appName.isBlank()) {
+                    "Format corect: este permisă TikTok"
+                } else if (appSafetyManager.isBlockedAppName(appName)) {
+                    "Nu, aplicația este blocată pentru siguranță: $appName"
+                } else if (customAllowedAppsManager.isCustomAllowed(appName)) {
+                    "Da, aplicația este permisă custom: $appName"
+                } else {
+                    "Aplicația nu este în lista permisă custom: $appName"
+                }
+            }
+
+            command.startsWith("blocheaza aplicatia ") ||
+                command.startsWith("blochează aplicația ") ||
+                command.startsWith("blocheaza aplicația ") ||
+                command.startsWith("blochează aplicatia ") -> {
+                val appName = original
+                    .replaceFirst("blochează aplicația", "", ignoreCase = true)
+                    .replaceFirst("blocheaza aplicatia", "", ignoreCase = true)
+                    .replaceFirst("blochează aplicatia", "", ignoreCase = true)
+                    .replaceFirst("blocheaza aplicația", "", ignoreCase = true)
+                    .trim()
+
+                customBlockedAppsManager.blockApp(appName)
+            }
+
+            command.startsWith("deblocheaza aplicatia ") ||
+                command.startsWith("deblochează aplicația ") ||
+                command.startsWith("deblocheaza aplicația ") ||
+                command.startsWith("deblochează aplicatia ") -> {
+                val appName = original
+                    .replaceFirst("deblochează aplicația", "", ignoreCase = true)
+                    .replaceFirst("deblocheaza aplicatia", "", ignoreCase = true)
+                    .replaceFirst("deblochează aplicatia", "", ignoreCase = true)
+                    .replaceFirst("deblocheaza aplicația", "", ignoreCase = true)
+                    .trim()
+
+                customBlockedAppsManager.unblockApp(appName)
+            }
+
+            command == "listeaza aplicatii blocate custom" ||
+                command == "listează aplicații blocate custom" -> {
+                customBlockedAppsManager.listCustomBlockedApps()
+            }
+
             command == "aplicatia curenta" ||
                 command == "aplicația curentă" ||
                 command == "package curent" ||

@@ -23,7 +23,7 @@ class JarvisAccessibilityService : AccessibilityService() {
         val isBlocked: Boolean
     )
 
-    private val appSafetyManager = AppSafetyManager()
+    private val appSafetyManager = AppSafetyManager(this)
 
     override fun onServiceConnected() {
         super.onServiceConnected()

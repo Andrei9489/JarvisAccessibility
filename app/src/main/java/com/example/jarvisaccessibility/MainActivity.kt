@@ -1,6 +1,9 @@
 package com.example.jarvisaccessibility
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Typeface
@@ -33,6 +36,8 @@ class MainActivity : Activity() {
     private lateinit var aiDebugLogger: AiDebugLogger
     private lateinit var aiStopManager: AiStopManager
     private lateinit var aiPendingActionManager: AiPendingActionManager
+    private lateinit var aiCommandMemory: AiCommandMemory
+    private lateinit var settingsExportManager: JarvisSettingsExportManager
 
     private var lastReleaseUrl: String = "https://github.com/Andrei9489/JarvisAccessibility/releases"
     private var lastApkUrl: String = ""
@@ -48,6 +53,8 @@ class MainActivity : Activity() {
         aiDebugLogger = AiDebugLogger(this)
         aiStopManager = AiStopManager(this)
         aiPendingActionManager = AiPendingActionManager(this)
+        aiCommandMemory = AiCommandMemory(this)
+        settingsExportManager = JarvisSettingsExportManager(this)
 
         val scrollView = ScrollView(this)
 
@@ -183,6 +190,27 @@ class MainActivity : Activity() {
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         })
 
+        addSection(layout, "Backup / setări Jarvis")
+        layout.addView(button("Exportă setări Jarvis") {
+            resultText.text = settingsExportManager.exportSettings()
+        })
+
+        layout.addView(button("Copiază export setări") {
+            copySettingsExportToClipboard()
+        })
+
+        layout.addView(button("Șterge liste custom blocate/permise") {
+            val message = settingsExportManager.clearCustomLists()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Șterge memoria AI") {
+            val message = settingsExportManager.clearAiMemory()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
         addSection(layout, "Update aplicație")
         layout.addView(button("Verifică update") { checkUpdate() })
         layout.addView(button("Descarcă update") { downloadUpdate() })
@@ -204,6 +232,16 @@ class MainActivity : Activity() {
         layout.addView(button("Vorbește") { startVoiceInput() })
         layout.addView(button("Execută comanda") { executeJarvisCommand() })
         layout.addView(button("Execută cu AI") { executeWithAi() })
+
+        layout.addView(button("Repetă ultima comandă AI") {
+            repeatLastAiCommand()
+        })
+
+        layout.addView(button("Șterge ultima comandă AI") {
+            val message = aiCommandMemory.clearLastCommand()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
         layout.addView(button("Oprește AI") {
             val message = aiStopManager.requestStop()
             aiStatusText.text = "Status AI: oprire cerută"
@@ -245,9 +283,27 @@ class MainActivity : Activity() {
         layout.addView(button("Recente") { executeDirectCommand("recente") })
         layout.addView(button("Despre aplicație") { showAbout() })
 
+        addSection(layout, "Comenzi AI rapide")
+        layout.addView(button("AI: Chrome + vremea") {
+            runAiPreset("deschide Chrome și caută vremea azi")
+        })
+        layout.addView(button("AI: Citește ecranul") {
+            runAiPreset("citește ecranul")
+        })
+        layout.addView(button("AI: Scroll jos") {
+            runAiPreset("fă scroll în jos")
+        })
+        layout.addView(button("AI: Home + Recente") {
+            runAiPreset("mergi acasă și deschide aplicațiile recente")
+        })
+        layout.addView(button("AI: Test siguranță Banking") {
+            runAiPreset("deschide Mobile Banking")
+        })
+
         addSection(layout, "Exemple AI")
         layout.addView(normalText("""
             deschide browserul
+            deschide Chrome și caută vremea azi
             caută vremea de azi
             apasă pe butonul OK
             scrie salut în câmpul selectat
@@ -277,6 +333,10 @@ class MainActivity : Activity() {
 
     private fun executeWithAi() {
         val command = inputCommand.text.toString().trim()
+
+        if (command.isNotBlank()) {
+            aiCommandMemory.saveLastCommand(command)
+        }
 
         if (command.isBlank()) {
             aiStatusText.text = "Status AI: comandă goală"
@@ -353,6 +413,43 @@ class MainActivity : Activity() {
         }
     }
 
+
+
+
+
+    private fun copySettingsExportToClipboard() {
+        val exportText = settingsExportManager.exportSettings()
+
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Jarvis Settings Export", exportText)
+        clipboard.setPrimaryClip(clip)
+
+        resultText.text = "Export setări copiat în clipboard.\n\n$exportText"
+        Toast.makeText(this, "Export setări copiat", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun runAiPreset(command: String) {
+        inputCommand.setText(command)
+        inputCommand.setSelection(inputCommand.text.length)
+        resultText.text = "Rulez preset AI:\n$command"
+        executeWithAi()
+    }
+
+    private fun repeatLastAiCommand() {
+        val lastCommand = aiCommandMemory.getLastCommand()
+
+        if (lastCommand.isBlank()) {
+            resultText.text = "Nu există comandă AI salvată."
+            Toast.makeText(this, "Nu există comandă AI salvată", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        inputCommand.setText(lastCommand)
+        inputCommand.setSelection(inputCommand.text.length)
+
+        resultText.text = "Repet ultima comandă AI:\n$lastCommand"
+        executeWithAi()
+    }
 
     private fun confirmPendingAiAction() {
         val service = JarvisAccessibilityService.instance

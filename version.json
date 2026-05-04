@@ -1,7 +1,7 @@
 {
-  "versionCode": 32,
-  "versionName": "1.3.7",
+  "versionCode": 38,
+  "versionName": "1.4.3",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat status live pentru execuțiile AI."
+  "notes": "Adăugat buton pentru copierea exportului de setări Jarvis în clipboard."
 }

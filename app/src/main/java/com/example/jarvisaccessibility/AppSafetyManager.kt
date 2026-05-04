@@ -1,6 +1,13 @@
 package com.example.jarvisaccessibility
 
-class AppSafetyManager {
+import android.content.Context
+
+class AppSafetyManager(
+    private val context: Context? = null
+) {
+
+    private val customBlockedAppsManager: CustomBlockedAppsManager? =
+        context?.let { CustomBlockedAppsManager(it) }
 
     private val blockedAppNames = listOf(
         "mobile banking",
@@ -66,9 +73,13 @@ class AppSafetyManager {
     fun isBlockedAppName(appNameRaw: String): Boolean {
         val appName = normalize(appNameRaw)
 
-        return blockedAppNames.any { blocked ->
+        val baseBlocked = blockedAppNames.any { blocked ->
             appName.contains(normalize(blocked))
         }
+
+        val customBlocked = customBlockedAppsManager?.isCustomBlocked(appNameRaw) ?: false
+
+        return baseBlocked || customBlocked
     }
 
     fun isBlockedPackage(packageNameRaw: String?): Boolean {
@@ -82,7 +93,7 @@ class AppSafetyManager {
     }
 
     fun blockedMessage(appNameRaw: String): String {
-        return "Blocat pentru siguranță: Jarvis nu controlează aplicații bancare, portofele, parole sau plăți: $appNameRaw"
+        return "Blocat pentru siguranță: Jarvis nu controlează aplicații bancare, portofele, parole, plăți sau aplicații blocate custom: $appNameRaw"
     }
 
     fun blockedCurrentAppMessage(packageNameRaw: String?): String {
@@ -90,12 +101,16 @@ class AppSafetyManager {
     }
 
     fun listBlockedApps(): String {
-        return buildString {
+        val base = buildString {
             append("Aplicații blocate pentru siguranță:\n")
             blockedAppNames.distinct().sorted().forEach {
                 append("- ").append(it).append("\n")
             }
         }.trim()
+
+        val custom = customBlockedAppsManager?.listCustomBlockedApps() ?: "Nu există aplicații blocate custom."
+
+        return "$base\n\n$custom"
     }
 
     fun checkBlockedApp(appNameRaw: String): String {
