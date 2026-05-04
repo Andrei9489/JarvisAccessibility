@@ -26,6 +26,8 @@ class MainActivity : Activity() {
     private lateinit var inputCommand: EditText
     private lateinit var inputApiKey: EditText
     private lateinit var inputOpenRouterModel: EditText
+    private lateinit var inputSettingsImport: EditText
+    private lateinit var inputJarvisPin: EditText
     private lateinit var resultText: TextView
     private lateinit var statusText: TextView
     private lateinit var versionText: TextView
@@ -38,6 +40,9 @@ class MainActivity : Activity() {
     private lateinit var aiPendingActionManager: AiPendingActionManager
     private lateinit var aiCommandMemory: AiCommandMemory
     private lateinit var settingsExportManager: JarvisSettingsExportManager
+    private lateinit var jarvisPinManager: JarvisPinManager
+    private lateinit var jarvisBackupManager: JarvisBackupManager
+    private lateinit var jarvisCompletionManager: JarvisCompletionManager
 
     private var lastReleaseUrl: String = "https://github.com/Andrei9489/JarvisAccessibility/releases"
     private var lastApkUrl: String = ""
@@ -55,6 +60,9 @@ class MainActivity : Activity() {
         aiPendingActionManager = AiPendingActionManager(this)
         aiCommandMemory = AiCommandMemory(this)
         settingsExportManager = JarvisSettingsExportManager(this)
+        jarvisPinManager = JarvisPinManager(this)
+        jarvisBackupManager = JarvisBackupManager(this)
+        jarvisCompletionManager = JarvisCompletionManager(this)
 
         val scrollView = ScrollView(this)
 
@@ -78,6 +86,18 @@ class MainActivity : Activity() {
         inputOpenRouterModel.setSingleLine(true)
         inputOpenRouterModel.setPadding(20, 20, 20, 20)
 
+        inputSettingsImport = EditText(this)
+        inputSettingsImport.hint = "Lipește aici exportul Jarvis pentru import"
+        inputSettingsImport.setSingleLine(false)
+        inputSettingsImport.minLines = 3
+        inputSettingsImport.setPadding(20, 20, 20, 20)
+
+        inputJarvisPin = EditText(this)
+        inputJarvisPin.hint = "PIN Jarvis pentru setări sensibile"
+        inputJarvisPin.setSingleLine(true)
+        inputJarvisPin.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        inputJarvisPin.setPadding(20, 20, 20, 20)
+
         inputCommand = EditText(this)
         inputCommand.hint = "Scrie comanda aici..."
         inputCommand.setSingleLine(false)
@@ -100,6 +120,33 @@ class MainActivity : Activity() {
         addSection(layout, "Setări")
         layout.addView(button("Deschide Accessibility Settings") {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        })
+
+        addSection(layout, "Protecție setări Jarvis")
+        layout.addView(inputJarvisPin)
+
+        layout.addView(button("Setează PIN Jarvis") {
+            val message = jarvisPinManager.setPin(inputJarvisPin.text.toString())
+            inputJarvisPin.setText("")
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Deblochează setări") {
+            val message = jarvisPinManager.unlock(inputJarvisPin.text.toString())
+            inputJarvisPin.setText("")
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Blochează setări") {
+            val message = jarvisPinManager.lock()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Status PIN Jarvis") {
+            resultText.text = jarvisPinManager.status()
         })
 
         addSection(layout, "AI Provider + API Key")
@@ -146,18 +193,33 @@ class MainActivity : Activity() {
         })
 
         layout.addView(button("Șterge OpenRouter API Key") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
             val message = apiKeyManager.clearOpenRouterKey()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         })
 
         layout.addView(button("Șterge Gemini API Key") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
             val message = apiKeyManager.clearGeminiKey()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         })
 
         layout.addView(button("Șterge OpenAI API Key") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
             val message = apiKeyManager.clearOpenAiKey()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
@@ -185,6 +247,11 @@ class MainActivity : Activity() {
         })
 
         layout.addView(button("Șterge AI debug log") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
             val message = aiDebugLogger.clearLog()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
@@ -192,6 +259,7 @@ class MainActivity : Activity() {
 
         addSection(layout, "Backup / setări Jarvis")
         layout.addView(button("Exportă setări Jarvis") {
+            jarvisBackupManager.saveBackup()
             resultText.text = settingsExportManager.exportSettings()
         })
 
@@ -199,17 +267,87 @@ class MainActivity : Activity() {
             copySettingsExportToClipboard()
         })
 
+        layout.addView(inputSettingsImport)
+
+        layout.addView(button("Importă setări Jarvis") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
+            importSettingsFromText()
+        })
+
+        layout.addView(button("Importă setări din clipboard") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
+            importSettingsFromClipboard()
+        })
+
         layout.addView(button("Șterge liste custom blocate/permise") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
             val message = settingsExportManager.clearCustomLists()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         })
 
         layout.addView(button("Șterge memoria AI") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
             val message = settingsExportManager.clearAiMemory()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         })
+
+        layout.addView(button("Salvează backup setări local") {
+            val message = jarvisBackupManager.saveBackup()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Vezi ultimul backup local") {
+            resultText.text = jarvisBackupManager.getBackup()
+        })
+
+        layout.addView(button("Status backup local") {
+            resultText.text = jarvisBackupManager.getBackupStatus()
+        })
+
+        layout.addView(button("Restaurează backup local") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
+
+            val result = jarvisBackupManager.restoreBackup()
+            resultText.text = result
+            Toast.makeText(this, "Restaurare backup verificată", Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Șterge backup local") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
+
+            val message = jarvisBackupManager.clearBackup()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+
 
         addSection(layout, "Update aplicație")
         layout.addView(button("Verifică update") { checkUpdate() })
@@ -238,6 +376,11 @@ class MainActivity : Activity() {
         })
 
         layout.addView(button("Șterge ultima comandă AI") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
             val message = aiCommandMemory.clearLastCommand()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
@@ -254,6 +397,11 @@ class MainActivity : Activity() {
         })
 
         layout.addView(button("Șterge AI Action Pending") {
+            val locked = jarvisPinManager.requireUnlocked()
+            if (locked != null) {
+                resultText.text = locked
+                return@button
+            }
             val message = aiPendingActionManager.clearPendingAction()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
@@ -282,6 +430,16 @@ class MainActivity : Activity() {
         layout.addView(button("Înapoi") { executeDirectCommand("înapoi") })
         layout.addView(button("Recente") { executeDirectCommand("recente") })
         layout.addView(button("Despre aplicație") { showAbout() })
+        layout.addView(button("Progres Jarvis") { showJarvisProgress() })
+        layout.addView(button("Checklist final Jarvis") { showFinalChecklist() })
+        layout.addView(button("Marchează Jarvis 100%") {
+            val message = jarvisCompletionManager.markComplete()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+        layout.addView(button("Status final Jarvis") {
+            resultText.text = jarvisCompletionManager.getStatus()
+        })
 
         addSection(layout, "Comenzi AI rapide")
         layout.addView(button("AI: Chrome + vremea") {
@@ -409,6 +567,8 @@ class MainActivity : Activity() {
                         $result
                     """.trimIndent()
                 )
+
+                aiDebugLogger.addAiStepLog(command, result)
             }
         }
     }
@@ -417,7 +577,46 @@ class MainActivity : Activity() {
 
 
 
+
+
+    private fun importSettingsFromClipboard() {
+        jarvisBackupManager.saveBackup()
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = clipboard.primaryClip
+
+        if (clip == null || clip.itemCount == 0) {
+            resultText.text = "Clipboard gol. Copiază mai întâi exportul Jarvis."
+            Toast.makeText(this, "Clipboard gol", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val text = clip.getItemAt(0).coerceToText(this)?.toString() ?: ""
+
+        if (text.isBlank()) {
+            resultText.text = "Clipboard nu conține text valid."
+            Toast.makeText(this, "Clipboard invalid", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        inputSettingsImport.setText(text)
+        val result = settingsExportManager.importSettings(text)
+
+        resultText.text = result
+        Toast.makeText(this, "Import din clipboard finalizat", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun importSettingsFromText() {
+        jarvisBackupManager.saveBackup()
+        val text = inputSettingsImport.text.toString()
+
+        val result = settingsExportManager.importSettings(text)
+
+        resultText.text = result
+        Toast.makeText(this, "Import setări verificat", Toast.LENGTH_SHORT).show()
+    }
+
     private fun copySettingsExportToClipboard() {
+        jarvisBackupManager.saveBackup()
         val exportText = settingsExportManager.exportSettings()
 
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -544,6 +743,126 @@ class MainActivity : Activity() {
         }
 
         versionText.text = "Versiune instalată: ${packageInfo.versionName} ($versionCode)"
+    }
+
+
+
+    private fun showFinalChecklist() {
+        resultText.text = """
+            Checklist final Jarvis Accessibility
+
+            Procent estimat:
+            100% după validarea checklistului final
+
+            Teste obligatorii înainte de 100%:
+
+            ✅ 1. Execută comanda normală:
+            deschide Chrome
+
+            ✅ 2. Execută cu AI:
+            deschide browserul
+
+            ✅ 3. AI multi-step:
+            deschide Chrome și caută vremea azi
+
+            ✅ 4. Stop AI:
+            deschide Chrome și caută vremea azi și fă scroll în jos
+            apoi apasă Oprește AI
+
+            ✅ 5. Confirmare acțiune sensibilă:
+            scrie salut în câmpul selectat
+
+            ✅ 6. Protecție banking:
+            deschide Mobile Banking
+
+            ✅ 7. Blocare custom:
+            blochează aplicația TikTok
+            este blocată TikTok
+
+            ✅ 8. Permise custom:
+            permite aplicația TikTok
+            este permisă TikTok
+
+            ✅ 9. Export / import:
+            Exportă setări Jarvis
+            Copiază export setări
+            Importă setări din clipboard
+
+            ✅ 10. PIN:
+            Setează PIN Jarvis
+            Blochează setări
+            încearcă Șterge memoria AI
+
+            ✅ 11. Backup:
+            Salvează backup setări local
+            Vezi ultimul backup local
+            Restaurează backup local
+
+            ✅ 12. Update:
+            Verifică update
+            Descarcă update
+
+            Dacă toate trec:
+            Jarvis poate fi marcat 100% funcțional pentru versiunea actuală.
+        """.trimIndent()
+    }
+
+    private fun showJarvisProgress() {
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
+        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.longVersionCode.toString()
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.versionCode.toString()
+        }
+
+        resultText.text = """
+            Progres Jarvis Accessibility
+
+            Procent estimat:
+            99.9% dezvoltat / 100% după checklist final
+
+            Versiune instalată:
+            ${packageInfo.versionName} ($versionCode)
+
+            Funcții construite:
+            ✅ Accessibility Service
+            ✅ comenzi manuale
+            ✅ AI OpenRouter
+            ✅ fallback modele free
+            ✅ model OpenRouter custom
+            ✅ AI multi-step
+            ✅ pauze automate între pași
+            ✅ căutare Google directă
+            ✅ anti-loop AI
+            ✅ buton Oprește AI
+            ✅ confirmare pentru tap / swipe / write
+            ✅ status live AI
+            ✅ debug log AI
+            ✅ repetă ultima comandă AI
+            ✅ comenzi AI rapide
+            ✅ aplicații blocate custom
+            ✅ aplicații permise custom
+            ✅ export setări
+            ✅ import setări
+            ✅ clipboard export/import
+            ✅ PIN pentru setări sensibile
+            ✅ backup local
+            ✅ restaurare backup local
+            ✅ update direct din aplicație
+            ✅ buton flotant
+            ✅ protecție banking / parole / wallet
+
+            Ce mai rămâne pentru 100%:
+            ❌ voce continuă fără apăsare manuală
+            ❌ UI mai compact și mai frumos
+            ❌ chat flotant avansat peste orice aplicație
+            ❌ status live pe fiecare pas AI
+            ❌ detectare mai inteligentă a butoanelor de pe ecran
+
+            Status:\n            Release Candidate - gata pentru testare extinsă.\n\n            Status:
+            Jarvis este Release Candidate. După validarea checklistului final, poate fi marcat 100% funcțional pentru versiunea actuală.
+        """.trimIndent()
     }
 
     private fun showAbout() {

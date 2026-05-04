@@ -29,8 +29,32 @@ class AiDebugLogger(
         }
 
         prefs.edit()
-            .putString(key, newLog.take(12000))
+            .putString(key, newLog.take(20000))
             .apply()
+    }
+
+    fun addAiStepLog(command: String, result: String) {
+        val stepLines = result
+            .lines()
+            .filter {
+                it.contains("Status pas AI", ignoreCase = true) ||
+                    it.trim().startsWith("ACTION:", ignoreCase = true) ||
+                    it.contains("Rezultat:", ignoreCase = true) ||
+                    it.contains("Oprit", ignoreCase = true) ||
+                    it.contains("Blocat", ignoreCase = true)
+            }
+            .joinToString("\n")
+
+        addLog(
+            title = "AI step execution",
+            details = """
+                Command:
+                $command
+
+                Steps:
+                ${stepLines.ifBlank { "Nu s-au găsit pași AI în rezultat." }}
+            """.trimIndent()
+        )
     }
 
     fun getLog(): String {

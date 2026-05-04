@@ -77,6 +77,8 @@ class AiOrchestrator(
 
         val resultBuilder = StringBuilder()
 
+        val totalSteps = lines.size
+
         for ((index, line) in lines.withIndex()) {
             if (stopManager.isStopRequested()) {
                 resultBuilder.append("Execuția AI a fost oprită manual.")
@@ -85,6 +87,14 @@ class AiOrchestrator(
             }
 
             val actionName = getActionName(line)
+
+            resultBuilder.append("Status pas AI: ")
+                .append(index + 1)
+                .append("/")
+                .append(totalSteps)
+                .append(" - ")
+                .append(actionName)
+                .append("\n")
 
             when (actionName) {
                 "tap" -> {

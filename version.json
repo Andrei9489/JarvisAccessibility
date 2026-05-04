@@ -1,7 +1,7 @@
 {
-  "versionCode": 38,
-  "versionName": "1.4.3",
+  "versionCode": 51,
+  "versionName": "1.5.6",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat buton pentru copierea exportului de setări Jarvis în clipboard."
+  "notes": "Adăugat status final Jarvis și marcaj 100% după checklist."
 }

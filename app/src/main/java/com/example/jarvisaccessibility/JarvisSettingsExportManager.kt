@@ -15,6 +15,10 @@ class JarvisSettingsExportManager(
         return """
             Jarvis Settings Export
 
+            AI_PROVIDER=${apiKeyManager.getAiProvider()}
+            OPENROUTER_MODEL=${apiKeyManager.getOpenRouterModel()}
+            LAST_AI_COMMAND=${aiCommandMemory.getLastCommand()}
+
             AI:
             ${apiKeyManager.getStatusText()}
 
@@ -27,6 +31,58 @@ class JarvisSettingsExportManager(
             Aplicații permise custom:
             ${customAllowedAppsManager.listCustomAllowedApps()}
         """.trimIndent()
+    }
+
+    fun importSettings(text: String): String {
+        if (text.isBlank()) {
+            return "Textul pentru import este gol."
+        }
+
+        var importedCount = 0
+        val messages = mutableListOf<String>()
+
+        text.lines().forEach { rawLine ->
+            val line = rawLine.trim()
+
+            when {
+                line.startsWith("AI_PROVIDER=") -> {
+                    val provider = line.substringAfter("AI_PROVIDER=").trim()
+                    val result = apiKeyManager.saveAiProvider(provider)
+                    messages.add(result)
+                    importedCount++
+                }
+
+                line.startsWith("OPENROUTER_MODEL=") -> {
+                    val model = line.substringAfter("OPENROUTER_MODEL=").trim()
+                    if (model.isNotBlank()) {
+                        val result = apiKeyManager.saveOpenRouterModel(model)
+                        messages.add(result)
+                        importedCount++
+                    }
+                }
+
+                line.startsWith("LAST_AI_COMMAND=") -> {
+                    val command = line.substringAfter("LAST_AI_COMMAND=").trim()
+                    if (command.isNotBlank()) {
+                        aiCommandMemory.saveLastCommand(command)
+                        messages.add("Ultima comandă AI importată.")
+                        importedCount++
+                    }
+                }
+            }
+        }
+
+        if (importedCount == 0) {
+            return "Nu am găsit setări compatibile pentru import."
+        }
+
+        return buildString {
+            append("Import setări finalizat.\n")
+            append("Elemente importate: ").append(importedCount).append("\n\n")
+            messages.forEach {
+                append("- ").append(it).append("\n")
+            }
+        }.trim()
     }
 
     fun clearCustomLists(): String {
