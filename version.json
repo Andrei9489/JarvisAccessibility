@@ -1,7 +1,7 @@
 {
-  "versionCode": 59,
-  "versionName": "1.6.7",
+  "versionCode": 60,
+  "versionName": "1.6.8",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Permis traficul HTTP local către 127.0.0.1 pentru Termux Server Bridge."
+  "notes": "Afișare mai clară pentru statusul și update-ul serverului Termux."
 }
