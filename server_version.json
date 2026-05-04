@@ -1,8 +1,8 @@
 {
-  "serverVersionCode": 5,
-  "serverVersionName": "1.0.4",
+  "serverVersionCode": 6,
+  "serverVersionName": "1.0.5",
   "serverUrl": "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/termux-server/server.py",
-  "androidAppVersionCode": 70,
-  "androidAppVersionName": "1.7.8",
-  "notes": "Upgrade sincronizat: localhost afișează versiunea APK Android și versiunea serverului Termux."
+  "androidAppVersionCode": 71,
+  "androidAppVersionName": "1.7.9",
+  "notes": "Upgrade sincronizat: serverul salvează istoricul comenzilor vocale și expune /command-history."
 }

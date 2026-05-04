@@ -10,13 +10,14 @@ app = Flask(__name__)
 
 START_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 LAST_COMMAND = ""
+COMMAND_HISTORY = []
 AUTO_UPDATE_STATUS = "not_checked"
 
-LOCAL_SERVER_VERSION_CODE = 5
-LOCAL_SERVER_VERSION_NAME = "1.0.4"
+LOCAL_SERVER_VERSION_CODE = 6
+LOCAL_SERVER_VERSION_NAME = "1.0.5"
 
-ANDROID_APP_VERSION_CODE = 70
-ANDROID_APP_VERSION_NAME = "1.7.8"
+ANDROID_APP_VERSION_CODE = 71
+ANDROID_APP_VERSION_NAME = "1.7.9"
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/server_version.json"
 LOCAL_SERVER_PATH = os.path.abspath(__file__)
@@ -50,6 +51,20 @@ def download_text(url):
 def get_remote_server_info():
     raw = download_text(REMOTE_VERSION_URL)
     return json.loads(raw)
+
+
+def add_command_history(text, intent, reply):
+    global COMMAND_HISTORY
+
+    item = {
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "text": text,
+        "intent": intent,
+        "reply": reply
+    }
+
+    COMMAND_HISTORY.insert(0, item)
+    COMMAND_HISTORY = COMMAND_HISTORY[:30]
 
 def normalize(text):
     return (
@@ -354,9 +369,12 @@ def home():
             <p>Jarvis Android App: """ + ANDROID_APP_VERSION_NAME + """ (""" + str(ANDROID_APP_VERSION_CODE) + """)</p>
             <p>Jarvis Termux Server: """ + LOCAL_SERVER_VERSION_NAME + """ (""" + str(LOCAL_SERVER_VERSION_CODE) + """)</p>
             <p>Auto update: """ + AUTO_UPDATE_STATUS + """</p>
+            <p>Command history: """ + str(len(COMMAND_HISTORY)) + """</p>
             <p>Endpoints:</p>
             <p><code>/status</code></p>
             <p><code>/command?text=hello</code></p>
+            <p><code>/command-history</code></p>
+            <p><code>/clear-history</code></p>
             <p><code>/say?text=hello sir</code></p>
             <p><code>/device</code></p>
             <p><code>/update/check</code></p>
@@ -373,6 +391,7 @@ def status():
         "name": "Jarvis Termux Server",
         "started_at": START_TIME,
         "last_command": LAST_COMMAND,
+        "commandHistoryCount": len(COMMAND_HISTORY),
         "serverVersionCode": LOCAL_SERVER_VERSION_CODE,
         "serverVersionName": LOCAL_SERVER_VERSION_NAME,
         "androidAppVersionCode": ANDROID_APP_VERSION_CODE,
@@ -394,6 +413,7 @@ def command():
     LAST_COMMAND = text
 
     brain = interpret_command(text)
+    add_command_history(text, brain.get("intent"), brain.get("reply"))
 
     return jsonify({
         "ok": True,
@@ -425,6 +445,25 @@ def device():
         "battery": safe_shell("termux-battery-status", timeout_seconds=5),
         "wifi": safe_shell("termux-wifi-connectioninfo", timeout_seconds=5),
         "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+
+@app.route("/command-history")
+def command_history():
+    return jsonify({
+        "ok": True,
+        "count": len(COMMAND_HISTORY),
+        "items": COMMAND_HISTORY
+    })
+
+@app.route("/clear-history")
+def clear_history():
+    global COMMAND_HISTORY
+    COMMAND_HISTORY = []
+
+    return jsonify({
+        "ok": True,
+        "message": "Istoricul comenzilor serverului a fost șters."
     })
 
 @app.route("/update/check")

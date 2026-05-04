@@ -43,6 +43,18 @@ class TermuxServerClient {
         }
     }
 
+    fun getCommandHistory(callback: (String) -> Unit) {
+        getAsync("$baseUrl/command-history") { raw ->
+            callback(prettyCommandHistory(raw))
+        }
+    }
+
+    fun clearCommandHistory(callback: (String) -> Unit) {
+        getAsync("$baseUrl/clear-history") { raw ->
+            callback(prettyClearHistory(raw))
+        }
+    }
+
     private fun getAsync(urlString: String, callback: (String) -> Unit) {
         Thread {
             val result = try {
@@ -83,6 +95,51 @@ class TermuxServerClient {
         } catch (_: Exception) {
             null
         }
+    }
+
+
+    private fun prettyCommandHistory(raw: String): String {
+        val json = extractJson(raw) ?: return raw
+
+        if (!json.optBoolean("ok", false)) {
+            return "Istoric server: eroare\n${json.optString("error", raw)}"
+        }
+
+        val items = json.optJSONArray("items")
+            ?: return "Istoric server: gol."
+
+        if (items.length() == 0) {
+            return "Istoric comenzi server: gol."
+        }
+
+        val builder = StringBuilder()
+        builder.append("Istoric comenzi server\n\n")
+
+        for (i in 0 until minOf(items.length(), 15)) {
+            val item = items.optJSONObject(i) ?: continue
+            builder.append(i + 1)
+                .append(". ")
+                .append(item.optString("time", "-"))
+                .append("\n   Comandă: ")
+                .append(item.optString("text", "-"))
+                .append("\n   Intent: ")
+                .append(item.optString("intent", "-"))
+                .append("\n   Răspuns: ")
+                .append(item.optString("reply", "-"))
+                .append("\n\n")
+        }
+
+        return builder.toString().trim()
+    }
+
+    private fun prettyClearHistory(raw: String): String {
+        val json = extractJson(raw) ?: return raw
+
+        if (!json.optBoolean("ok", false)) {
+            return "Ștergere istoric server: eroare\n${json.optString("error", raw)}"
+        }
+
+        return json.optString("message", "Istoricul a fost șters.")
     }
 
     private fun prettyStatus(raw: String): String {

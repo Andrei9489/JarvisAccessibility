@@ -332,6 +332,24 @@ class MainActivity : Activity() {
             }
         })
 
+        layout.addView(button("Vezi istoric comenzi server") {
+            resultText.text = "Citesc istoricul comenzilor din server..."
+            termuxServerClient.getCommandHistory { result ->
+                runOnUiThread {
+                    resultText.text = result
+                }
+            }
+        })
+
+        layout.addView(button("Șterge istoric comenzi server") {
+            resultText.text = "Șterg istoricul comenzilor din server..."
+            termuxServerClient.clearCommandHistory { result ->
+                runOnUiThread {
+                    resultText.text = result
+                }
+            }
+        })
+
         addSection(layout, "Backup / setări Jarvis")
         layout.addView(button("Exportă setări Jarvis") {
             jarvisBackupManager.saveBackup()
