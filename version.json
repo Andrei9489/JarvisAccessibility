@@ -1,7 +1,7 @@
 {
-  "versionCode": 16,
-  "versionName": "1.2.1",
+  "versionCode": 17,
+  "versionName": "1.2.2",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "API key pentru AI poate fi salvat și șters direct din aplicație."
+  "notes": "Adăugat suport Gemini AI și selector OpenAI/Gemini."
 }

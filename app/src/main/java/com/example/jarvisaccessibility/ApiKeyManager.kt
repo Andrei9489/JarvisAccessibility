@@ -12,22 +12,62 @@ class ApiKeyManager(
         val cleanKey = apiKey.trim()
 
         if (cleanKey.isBlank()) {
-            return "API key este gol."
+            return "OpenAI API key este gol."
         }
 
         prefs.edit()
             .putString("openai_api_key", cleanKey)
             .apply()
 
-        return "API key salvat."
+        return "OpenAI API key salvat."
+    }
+
+    fun saveGeminiKey(apiKey: String): String {
+        val cleanKey = apiKey.trim()
+
+        if (cleanKey.isBlank()) {
+            return "Gemini API key este gol."
+        }
+
+        prefs.edit()
+            .putString("gemini_api_key", cleanKey)
+            .apply()
+
+        return "Gemini API key salvat."
     }
 
     fun getOpenAiKey(): String {
         return prefs.getString("openai_api_key", "") ?: ""
     }
 
+    fun getGeminiKey(): String {
+        return prefs.getString("gemini_api_key", "") ?: ""
+    }
+
     fun hasOpenAiKey(): Boolean {
         return getOpenAiKey().isNotBlank()
+    }
+
+    fun hasGeminiKey(): Boolean {
+        return getGeminiKey().isNotBlank()
+    }
+
+    fun saveAiProvider(provider: String): String {
+        val cleanProvider = provider.trim().lowercase()
+
+        if (cleanProvider != "openai" && cleanProvider != "gemini") {
+            return "Provider invalid. Folosește openai sau gemini."
+        }
+
+        prefs.edit()
+            .putString("ai_provider", cleanProvider)
+            .apply()
+
+        return "AI provider setat: $cleanProvider"
+    }
+
+    fun getAiProvider(): String {
+        return prefs.getString("ai_provider", "gemini") ?: "gemini"
     }
 
     fun clearOpenAiKey(): String {
@@ -35,6 +75,22 @@ class ApiKeyManager(
             .remove("openai_api_key")
             .apply()
 
-        return "API key șters."
+        return "OpenAI API key șters."
+    }
+
+    fun clearGeminiKey(): String {
+        prefs.edit()
+            .remove("gemini_api_key")
+            .apply()
+
+        return "Gemini API key șters."
+    }
+
+    fun getStatusText(): String {
+        return """
+            AI provider: ${getAiProvider()}
+            OpenAI key: ${if (hasOpenAiKey()) "salvat" else "nesalvat"}
+            Gemini key: ${if (hasGeminiKey()) "salvat" else "nesalvat"}
+        """.trimIndent()
     }
 }
