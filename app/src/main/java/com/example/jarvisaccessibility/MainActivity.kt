@@ -22,6 +22,7 @@ class MainActivity : Activity() {
     private lateinit var inputCommand: EditText
     private lateinit var resultText: TextView
     private lateinit var statusText: TextView
+    private lateinit var versionText: TextView
     private lateinit var historyText: TextView
     private lateinit var updateManager: UpdateManager
 
@@ -41,154 +42,77 @@ class MainActivity : Activity() {
         val layout = LinearLayout(this)
         layout.orientation = LinearLayout.VERTICAL
         layout.gravity = Gravity.CENTER_HORIZONTAL
-        layout.setPadding(40, 60, 40, 40)
+        layout.setPadding(36, 55, 36, 40)
 
-        val title = TextView(this)
-        title.text = "Jarvis Accessibility"
-        title.textSize = 26f
-        title.setTypeface(null, Typeface.BOLD)
-        title.gravity = Gravity.CENTER
-
-        statusText = TextView(this)
-        statusText.textSize = 16f
-        statusText.gravity = Gravity.CENTER
-        statusText.setPadding(0, 25, 0, 25)
-
-        val btnAccessibility = Button(this)
-        btnAccessibility.text = "Deschide Accessibility Settings"
-        btnAccessibility.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
-
-        val btnCheckUpdate = Button(this)
-        btnCheckUpdate.text = "Verifică update"
-        btnCheckUpdate.setOnClickListener {
-            checkUpdate()
-        }
-
-        val btnDownloadUpdate = Button(this)
-        btnDownloadUpdate.text = "Descarcă update"
-        btnDownloadUpdate.setOnClickListener {
-            downloadUpdate()
-        }
-
-        val btnOpenUpdate = Button(this)
-        btnOpenUpdate.text = "Deschide pagina update"
-        btnOpenUpdate.setOnClickListener {
-            updateManager.openReleasePage(lastReleaseUrl)
-        }
-
-        val btnOverlayPermission = Button(this)
-        btnOverlayPermission.text = "Permite buton flotant"
-        btnOverlayPermission.setOnClickListener {
-            requestOverlayPermission()
-        }
-
-        val btnStartFloating = Button(this)
-        btnStartFloating.text = "Pornește buton flotant"
-        btnStartFloating.setOnClickListener {
-            startFloatingButton()
-        }
-
-        val btnStopFloating = Button(this)
-        btnStopFloating.text = "Oprește buton flotant"
-        btnStopFloating.setOnClickListener {
-            stopService(Intent(this, JarvisFloatingService::class.java))
-            Toast.makeText(this, "Buton flotant oprit", Toast.LENGTH_SHORT).show()
-        }
+        val title = titleText("Jarvis Accessibility")
+        versionText = normalText("")
+        statusText = normalText("")
 
         inputCommand = EditText(this)
-        inputCommand.hint = "Ex: deschide Chrome"
+        inputCommand.hint = "Scrie comanda aici..."
         inputCommand.setSingleLine(false)
         inputCommand.minLines = 2
         inputCommand.setPadding(20, 20, 20, 20)
 
-        val btnVoice = Button(this)
-        btnVoice.text = "Vorbește"
-        btnVoice.setOnClickListener {
-            startVoiceInput()
-        }
+        resultText = normalText("Rezultat:")
+        resultText.setPadding(0, 25, 0, 25)
 
-        val btnExecute = Button(this)
-        btnExecute.text = "Execută comanda"
-        btnExecute.setOnClickListener {
-            executeJarvisCommand()
-        }
+        historyText = normalText("Istoric comenzi:\nGol")
+        historyText.setPadding(0, 20, 0, 80)
 
-        val btnClear = Button(this)
-        btnClear.text = "Clear rezultat"
-        btnClear.setOnClickListener {
+        layout.addView(title)
+        layout.addView(versionText)
+        layout.addView(statusText)
+
+        addSection(layout, "Setări")
+        layout.addView(button("Deschide Accessibility Settings") {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        })
+
+        addSection(layout, "Update aplicație")
+        layout.addView(button("Verifică update") { checkUpdate() })
+        layout.addView(button("Descarcă update") { downloadUpdate() })
+        layout.addView(button("Deschide pagina update") {
+            updateManager.openReleasePage(lastReleaseUrl)
+        })
+
+        addSection(layout, "Buton flotant")
+        layout.addView(button("Permite buton flotant") { requestOverlayPermission() })
+        layout.addView(button("Pornește buton flotant") { startFloatingButton() })
+        layout.addView(button("Oprește buton flotant") {
+            stopService(Intent(this, JarvisFloatingService::class.java))
+            Toast.makeText(this, "Buton flotant oprit", Toast.LENGTH_SHORT).show()
+        })
+
+        addSection(layout, "Comandă manuală / vocală")
+        layout.addView(inputCommand)
+        layout.addView(button("Vorbește") { startVoiceInput() })
+        layout.addView(button("Execută comanda") { executeJarvisCommand() })
+        layout.addView(button("Clear rezultat") {
             resultText.text = "Rezultat:"
             inputCommand.setText("")
             Toast.makeText(this, "Rezultat șters", Toast.LENGTH_SHORT).show()
-        }
-
-        val btnClearHistory = Button(this)
-        btnClearHistory.text = "Clear istoric"
-        btnClearHistory.setOnClickListener {
+        })
+        layout.addView(button("Clear istoric") {
             commandHistory.clear()
             updateHistory()
             Toast.makeText(this, "Istoric șters", Toast.LENGTH_SHORT).show()
-        }
+        })
 
-        val btnChrome = Button(this)
-        btnChrome.text = "Deschide Chrome"
-        btnChrome.setOnClickListener {
-            executeDirectCommand("deschide Chrome")
-        }
+        addSection(layout, "Comenzi rapide")
+        layout.addView(button("Deschide Chrome") { executeDirectCommand("deschide Chrome") })
+        layout.addView(button("Deschide YouTube") { executeDirectCommand("deschide YouTube") })
+        layout.addView(button("Deschide Termux") { executeDirectCommand("deschide Termux") })
+        layout.addView(button("Caută vremea azi") { executeDirectCommand("caută vremea azi") })
+        layout.addView(button("Citește ecranul") { executeDirectCommand("citește ecranul") })
+        layout.addView(button("Scroll jos") { executeDirectCommand("scroll jos") })
+        layout.addView(button("Home") { executeDirectCommand("home") })
+        layout.addView(button("Înapoi") { executeDirectCommand("înapoi") })
+        layout.addView(button("Recente") { executeDirectCommand("recente") })
+        layout.addView(button("Despre aplicație") { showAbout() })
 
-        val btnYoutube = Button(this)
-        btnYoutube.text = "Deschide YouTube"
-        btnYoutube.setOnClickListener {
-            executeDirectCommand("deschide YouTube")
-        }
-
-        val btnTermux = Button(this)
-        btnTermux.text = "Deschide Termux"
-        btnTermux.setOnClickListener {
-            executeDirectCommand("deschide Termux")
-        }
-
-        val btnSearch = Button(this)
-        btnSearch.text = "Caută vremea azi"
-        btnSearch.setOnClickListener {
-            executeDirectCommand("caută vremea azi")
-        }
-
-        val btnReadScreen = Button(this)
-        btnReadScreen.text = "Citește ecranul"
-        btnReadScreen.setOnClickListener {
-            executeDirectCommand("citește ecranul")
-        }
-
-        val btnScrollDown = Button(this)
-        btnScrollDown.text = "Scroll jos"
-        btnScrollDown.setOnClickListener {
-            executeDirectCommand("scroll jos")
-        }
-
-        val btnHome = Button(this)
-        btnHome.text = "Home"
-        btnHome.setOnClickListener {
-            executeDirectCommand("home")
-        }
-
-        val btnBack = Button(this)
-        btnBack.text = "Înapoi"
-        btnBack.setOnClickListener {
-            executeDirectCommand("înapoi")
-        }
-
-        val btnRecents = Button(this)
-        btnRecents.text = "Recente"
-        btnRecents.setOnClickListener {
-            executeDirectCommand("recente")
-        }
-
-        val examples = TextView(this)
-        examples.text = """
-            Exemple comenzi:
-
+        addSection(layout, "Exemple")
+        layout.addView(normalText("""
             deschide Chrome
             deschide YouTube
             deschide Termux
@@ -203,54 +127,101 @@ class MainActivity : Activity() {
             home
             înapoi
             recente
-        """.trimIndent()
-        examples.textSize = 14f
-        examples.setPadding(0, 30, 0, 20)
+        """.trimIndent()))
 
-        resultText = TextView(this)
-        resultText.text = "Rezultat:"
-        resultText.textSize = 16f
-        resultText.setPadding(0, 30, 0, 30)
-
-        historyText = TextView(this)
-        historyText.text = "Istoric comenzi:\nGol"
-        historyText.textSize = 15f
-        historyText.setPadding(0, 20, 0, 80)
-
-        layout.addView(title)
-        layout.addView(statusText)
-        layout.addView(btnAccessibility)
-        layout.addView(btnCheckUpdate)
-        layout.addView(btnDownloadUpdate)
-        layout.addView(btnOpenUpdate)
-        layout.addView(btnOverlayPermission)
-        layout.addView(btnStartFloating)
-        layout.addView(btnStopFloating)
-        layout.addView(inputCommand)
-        layout.addView(btnVoice)
-        layout.addView(btnExecute)
-        layout.addView(btnClear)
-        layout.addView(btnClearHistory)
-        layout.addView(btnChrome)
-        layout.addView(btnYoutube)
-        layout.addView(btnTermux)
-        layout.addView(btnSearch)
-        layout.addView(btnReadScreen)
-        layout.addView(btnScrollDown)
-        layout.addView(btnHome)
-        layout.addView(btnBack)
-        layout.addView(btnRecents)
-        layout.addView(examples)
+        addSection(layout, "Rezultat")
         layout.addView(resultText)
+
+        addSection(layout, "Istoric")
         layout.addView(historyText)
 
         scrollView.addView(layout)
         setContentView(scrollView)
+
+        updateVersionText()
     }
 
     override fun onResume() {
         super.onResume()
         updateServiceStatus()
+        updateVersionText()
+    }
+
+    private fun titleText(text: String): TextView {
+        return TextView(this).apply {
+            this.text = text
+            textSize = 28f
+            setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 15)
+        }
+    }
+
+    private fun sectionText(text: String): TextView {
+        return TextView(this).apply {
+            this.text = text
+            textSize = 20f
+            setTypeface(null, Typeface.BOLD)
+            setPadding(0, 35, 0, 12)
+        }
+    }
+
+    private fun normalText(text: String): TextView {
+        return TextView(this).apply {
+            this.text = text
+            textSize = 16f
+            setPadding(0, 8, 0, 8)
+        }
+    }
+
+    private fun button(text: String, action: () -> Unit): Button {
+        return Button(this).apply {
+            this.text = text
+            setAllCaps(false)
+            setOnClickListener { action() }
+        }
+    }
+
+    private fun addSection(layout: LinearLayout, title: String) {
+        layout.addView(sectionText(title))
+    }
+
+    private fun updateVersionText() {
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
+        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.longVersionCode.toString()
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.versionCode.toString()
+        }
+
+        versionText.text = "Versiune instalată: ${packageInfo.versionName} ($versionCode)"
+    }
+
+    private fun showAbout() {
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
+        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.longVersionCode.toString()
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.versionCode.toString()
+        }
+
+        resultText.text = """
+            Jarvis Accessibility
+
+            Versiune instalată:
+            ${packageInfo.versionName} ($versionCode)
+
+            Funcții:
+            - comenzi scrise
+            - comenzi vocale
+            - citire ecran
+            - control prin Accessibility
+            - buton flotant
+            - verificare update
+            - download update din aplicație
+        """.trimIndent()
     }
 
     private fun checkUpdate() {
@@ -437,12 +408,11 @@ class MainActivity : Activity() {
 
     private fun updateHistory() {
         if (commandHistory.isEmpty()) {
-            historyText.text = "Istoric comenzi:\nGol"
+            historyText.text = "Gol"
             return
         }
 
         val builder = StringBuilder()
-        builder.append("Istoric comenzi:\n")
 
         commandHistory.forEachIndexed { index, command ->
             builder.append(index + 1)

@@ -2,6 +2,7 @@ package com.example.jarvisaccessibility
 
 import android.app.Service
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
@@ -16,6 +17,7 @@ class JarvisFloatingService : Service() {
     private var windowManager: WindowManager? = null
     private var floatingButton: Button? = null
     private var buttonParams: WindowManager.LayoutParams? = null
+    private lateinit var prefs: SharedPreferences
 
     private var initialX = 0
     private var initialY = 0
@@ -25,11 +27,15 @@ class JarvisFloatingService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        prefs = getSharedPreferences("jarvis_floating_button", MODE_PRIVATE)
         showFloatingButton()
     }
 
     private fun showFloatingButton() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+
+        val savedX = prefs.getInt("button_x", 20)
+        val savedY = prefs.getInt("button_y", 250)
 
         val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -45,8 +51,8 @@ class JarvisFloatingService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 20
-            y = 250
+            x = savedX
+            y = savedY
         }
 
         floatingButton = Button(this).apply {
@@ -87,6 +93,8 @@ class JarvisFloatingService : Service() {
                     }
 
                     MotionEvent.ACTION_UP -> {
+                        saveButtonPosition(params.x, params.y)
+
                         if (!moved) {
                             openJarvis()
                         }
@@ -101,6 +109,13 @@ class JarvisFloatingService : Service() {
         windowManager?.addView(floatingButton, buttonParams)
     }
 
+    private fun saveButtonPosition(x: Int, y: Int) {
+        prefs.edit()
+            .putInt("button_x", x)
+            .putInt("button_y", y)
+            .apply()
+    }
+
     private fun openJarvis() {
         val intent = Intent(this, MainActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -109,6 +124,11 @@ class JarvisFloatingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+
+        val params = buttonParams
+        if (params != null) {
+            saveButtonPosition(params.x, params.y)
+        }
 
         val button = floatingButton
         if (button != null) {
