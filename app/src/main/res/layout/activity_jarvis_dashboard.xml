@@ -159,6 +159,17 @@
             android:layout_marginBottom="8dp" />
 
         <Button
+            android:id="@+id/btnVoiceJarvis"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Jarvis Voice"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#020817"
+            android:backgroundTint="#22C55E"
+            android:layout_marginBottom="8dp" />
+
+        <Button
             android:id="@+id/btnExecuteAI"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

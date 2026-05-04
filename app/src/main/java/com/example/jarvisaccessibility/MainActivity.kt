@@ -48,7 +48,10 @@ class MainActivity : Activity() {
     private var lastApkUrl: String = ""
 
     private val speechRequestCode = 1001
+    private val jarvisVoiceRequestCode = 2001
     private val commandHistory = mutableListOf<String>()
+    private lateinit var jarvisVoiceManager: JarvisVoiceManager
+    private var voiceModeUseAi = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +66,7 @@ class MainActivity : Activity() {
         jarvisPinManager = JarvisPinManager(this)
         jarvisBackupManager = JarvisBackupManager(this)
         jarvisCompletionManager = JarvisCompletionManager(this)
+        jarvisVoiceManager = JarvisVoiceManager(this)
 
         val scrollView = ScrollView(this)
 
@@ -372,6 +376,21 @@ class MainActivity : Activity() {
         layout.addView(aiStatusText)
         layout.addView(inputCommand)
         layout.addView(button("Vorbește") { startVoiceInput() })
+
+        layout.addView(button("Jarvis Voice: ascultă și execută") {
+            startJarvisVoiceMode(useAi = false)
+        })
+
+        layout.addView(button("Jarvis Voice AI: ascultă și execută cu AI") {
+            startJarvisVoiceMode(useAi = true)
+        })
+
+        layout.addView(button("Jarvis spune statusul") {
+            val status = "Jarvis este online. Accessibility este " + if (JarvisAccessibilityService.instance == null) "inactiv" else "activ"
+            resultText.text = status
+            jarvisVoiceManager.speak(status)
+        })
+
         layout.addView(button("Execută comanda") { executeJarvisCommand() })
         layout.addView(button("Execută cu AI") { executeWithAi() })
 
@@ -556,6 +575,7 @@ class MainActivity : Activity() {
                 }
 
                 resultText.text = result
+                jarvisVoiceManager.speak(result)
                 addToHistory("AI $provider: $command")
 
                 aiDebugLogger.addLog(
@@ -996,6 +1016,19 @@ class MainActivity : Activity() {
         Toast.makeText(this, "Buton flotant pornit", Toast.LENGTH_SHORT).show()
     }
 
+
+    private fun startJarvisVoiceMode(useAi: Boolean) {
+        voiceModeUseAi = useAi
+
+        resultText.text = if (useAi) {
+            "Jarvis Voice AI pornește. Spune comanda."
+        } else {
+            "Jarvis Voice pornește. Spune comanda."
+        }
+
+        jarvisVoiceManager.listen(jarvisVoiceRequestCode)
+    }
+
     private fun startVoiceInput() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         intent.putExtra(
@@ -1020,18 +1053,40 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == speechRequestCode && resultCode == RESULT_OK && data != null) {
+        if ((requestCode == speechRequestCode || requestCode == jarvisVoiceRequestCode) && resultCode == RESULT_OK && data != null) {
             val results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
             val spokenCommand = results?.firstOrNull()?.trim()
 
             if (!spokenCommand.isNullOrBlank()) {
                 inputCommand.setText(spokenCommand)
                 inputCommand.setSelection(inputCommand.text.length)
-                executeDirectCommand(spokenCommand)
+
+                if (requestCode == jarvisVoiceRequestCode) {
+                    jarvisVoiceManager.speak("Am înțeles: $spokenCommand")
+
+                    if (voiceModeUseAi) {
+                        executeWithAi()
+                    } else {
+                        executeDirectCommand(spokenCommand)
+                    }
+                } else {
+                    executeDirectCommand(spokenCommand)
+                }
             } else {
                 Toast.makeText(this, "Nu am detectat nicio comandă.", Toast.LENGTH_SHORT).show()
+                jarvisVoiceManager.speak("Nu am detectat nicio comandă.")
             }
         }
+    }
+
+
+    override fun onDestroy() {
+        try {
+            jarvisVoiceManager.shutdown()
+        } catch (_: Exception) {
+        }
+
+        super.onDestroy()
     }
 
     private fun executeJarvisCommand() {
@@ -1062,8 +1117,10 @@ class MainActivity : Activity() {
         try {
             val result = service.controller.executeCommand(command)
             resultText.text = "Comandă: $command\n\nRezultat:\n$result"
+            jarvisVoiceManager.speak(result)
         } catch (e: Exception) {
             resultText.text = "Comandă: $command\n\nEroare:\n${e.message}"
+            jarvisVoiceManager.speak("Eroare: ${e.message}")
         }
 
         updateServiceStatus()

@@ -19,6 +19,8 @@ class JarvisDashboardActivity : Activity() {
     private lateinit var txtAiStatus: TextView
     private lateinit var txtPhoneStatus: TextView
     private lateinit var recentCommandsList: LinearLayout
+    private lateinit var jarvisVoiceManager: JarvisVoiceManager
+    private val dashboardVoiceRequestCode = 3001
 
     private val recentCommands = listOf(
         "deschide Chrome",
@@ -46,6 +48,8 @@ class JarvisDashboardActivity : Activity() {
         val jarvisRing = findViewById<android.view.View>(R.id.jarvisRing)
         val pulse = AnimationUtils.loadAnimation(this, R.anim.jarvis_pulse)
         jarvisRing.startAnimation(pulse)
+
+        jarvisVoiceManager = JarvisVoiceManager(this)
 
         setupInitialData()
         setupButtons()
@@ -80,6 +84,10 @@ class JarvisDashboardActivity : Activity() {
 
         findViewById<Button>(R.id.btnOpenTermux).setOnClickListener {
             onOpenTermux()
+        }
+
+        findViewById<Button>(R.id.btnVoiceJarvis).setOnClickListener {
+            onJarvisVoice()
         }
 
         findViewById<Button>(R.id.btnExecuteAI).setOnClickListener {
@@ -158,6 +166,7 @@ class JarvisDashboardActivity : Activity() {
         }
 
         Toast.makeText(this, result, Toast.LENGTH_LONG).show()
+        jarvisVoiceManager.speak(result)
         txtAiStatus.text = "Status AI: finalizat"
         txtPhoneStatus.text = buildPhoneStatusText()
     }
@@ -172,6 +181,38 @@ class JarvisDashboardActivity : Activity() {
 
     private fun onOpenTermux() {
         executeDirectCommand("deschide Termux")
+    }
+
+
+    private fun onJarvisVoice() {
+        txtAiStatus.text = "Status AI: Jarvis te ascultă"
+        jarvisVoiceManager.listen(dashboardVoiceRequestCode)
+    }
+
+    @Deprecated("Deprecated Android API, dar funcționează pentru acest dashboard simplu.")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == dashboardVoiceRequestCode && resultCode == RESULT_OK && data != null) {
+            val results = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)
+            val spokenCommand = results?.firstOrNull()?.trim()
+
+            if (!spokenCommand.isNullOrBlank()) {
+                jarvisVoiceManager.speak("Am înțeles: $spokenCommand")
+                executeDirectCommand(spokenCommand)
+            } else {
+                jarvisVoiceManager.speak("Nu am detectat nicio comandă.")
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        try {
+            jarvisVoiceManager.shutdown()
+        } catch (_: Exception) {
+        }
+
+        super.onDestroy()
     }
 
     private fun onExecuteWithAI() {
