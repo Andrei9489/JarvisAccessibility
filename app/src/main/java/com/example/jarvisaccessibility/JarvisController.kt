@@ -11,9 +11,56 @@ class JarvisController(
     private val appSafetyManager = AppSafetyManager(service)
     private val customBlockedAppsManager = CustomBlockedAppsManager(service)
     private val customAllowedAppsManager = CustomAllowedAppsManager(service)
+    private val installedAppsManager = InstalledAppsManager(service)
 
     fun executeCommand(rawCommand: String): String {
         val original = rawCommand.trim()
+
+        val normalizedCommandForApps = original
+            .lowercase()
+            .replace("ă", "a")
+            .replace("â", "a")
+            .replace("î", "i")
+            .replace("ș", "s")
+            .replace("ş", "s")
+            .replace("ț", "t")
+            .replace("ţ", "t")
+
+        if (
+            normalizedCommandForApps == "listeaza aplicatiile instalate" ||
+            normalizedCommandForApps == "listeaza aplicatii instalate" ||
+            normalizedCommandForApps == "lista aplicatii"
+        ) {
+            return installedAppsManager.listAppsText()
+        }
+
+        if (
+            normalizedCommandForApps.startsWith("cauta aplicatia ") ||
+            normalizedCommandForApps.startsWith("cauta aplicatia instalata ")
+        ) {
+            val appName = original
+                .replaceFirst("caută aplicația instalată", "", ignoreCase = true)
+                .replaceFirst("cauta aplicatia instalata", "", ignoreCase = true)
+                .replaceFirst("caută aplicația", "", ignoreCase = true)
+                .replaceFirst("cauta aplicatia", "", ignoreCase = true)
+                .trim()
+
+            return installedAppsManager.searchAppsText(appName)
+        }
+
+        if (
+            normalizedCommandForApps.startsWith("deschide aplicatia ") ||
+            normalizedCommandForApps.startsWith("deschide aplicația ")
+        ) {
+            val appName = original
+                .replaceFirst("deschide aplicația", "", ignoreCase = true)
+                .replaceFirst("deschide aplicatia", "", ignoreCase = true)
+                .trim()
+
+            return installedAppsManager.openApp(appName)
+        }
+
+
         val command = normalize(original)
 
         if (command.isBlank()) {

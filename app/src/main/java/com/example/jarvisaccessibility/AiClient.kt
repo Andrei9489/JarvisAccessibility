@@ -177,6 +177,21 @@ class AiClient(
             Utilizator: caută știri pe YouTube
             ACTION: search("YouTube știri")
 
+            Utilizator: intră pe TikTok
+            ACTION: open_app("TikTok")
+
+            Utilizator: caută pe TikTok pisici amuzante
+            ACTION: search("TikTok pisici amuzante")
+
+            Utilizator: deschide Netflix și caută un film cu Batman
+            ACTION: search("Netflix film Batman")
+
+            Utilizator: intră pe site-ul imdb.com
+            ACTION: search("https://imdb.com")
+
+            Utilizator: caută în Spotify muzică relaxantă
+            ACTION: search("Spotify muzică relaxantă")
+
             Utilizator: mergi acasă și deschide aplicațiile recente
             ACTION: home()
             ACTION: wait(500)

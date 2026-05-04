@@ -22,6 +22,10 @@ class JarvisDashboardActivity : Activity() {
     private lateinit var recentCommandsList: LinearLayout
     private lateinit var jarvisVoiceManager: JarvisVoiceManager
     private val dashboardVoiceRequestCode = 3001
+    private val dashboardHandsFreeRequestCode = 3002
+    private var dashboardHandsFreeActive = false
+    private var dashboardHandsFreeCount = 0
+    private val dashboardMaxHandsFreeCommands = 10
     private val smartVoiceInterpreter = SmartVoiceInterpreter()
     private val termuxServerClient = TermuxServerClient()
 
@@ -88,6 +92,14 @@ class JarvisDashboardActivity : Activity() {
 
         findViewById<Button>(R.id.btnOpenTermux).setOnClickListener {
             onOpenTermux()
+        }
+
+        findViewById<Button>(R.id.btnHandsFreeJarvis).setOnClickListener {
+            startDashboardHandsFree()
+        }
+
+        findViewById<Button>(R.id.btnStopHandsFreeJarvis).setOnClickListener {
+            stopDashboardHandsFree()
         }
 
         findViewById<Button>(R.id.btnVoiceJarvis).setOnClickListener {
@@ -213,6 +225,45 @@ class JarvisDashboardActivity : Activity() {
     }
 
 
+
+    private fun startDashboardHandsFree() {
+        dashboardHandsFreeActive = true
+        dashboardHandsFreeCount = 0
+
+        txtAiStatus.text = "Status AI: Hands Free activ"
+        txtJarvisSubtitle.text = "Hands Free active, sir."
+        jarvisVoiceManager.speak("Hands Free active, sir.")
+        jarvisVoiceManager.listen(dashboardHandsFreeRequestCode)
+    }
+
+    private fun stopDashboardHandsFree() {
+        dashboardHandsFreeActive = false
+
+        txtAiStatus.text = "Status AI: Hands Free oprit"
+        txtJarvisSubtitle.text = "Hands Free stopped, sir."
+        jarvisVoiceManager.speak("Hands Free stopped, sir.")
+    }
+
+    private fun continueDashboardHandsFreeIfNeeded() {
+        if (!dashboardHandsFreeActive) return
+
+        dashboardHandsFreeCount++
+
+        if (dashboardHandsFreeCount >= dashboardMaxHandsFreeCommands) {
+            dashboardHandsFreeActive = false
+            txtAiStatus.text = "Status AI: Hands Free limită"
+            txtJarvisSubtitle.text = "Hands Free stopped for safety, sir."
+            jarvisVoiceManager.speak("Hands Free stopped for safety, sir.")
+            return
+        }
+
+        txtJarvisSubtitle.postDelayed({
+            if (dashboardHandsFreeActive) {
+                jarvisVoiceManager.listen(dashboardHandsFreeRequestCode)
+            }
+        }, 1200)
+    }
+
     private fun onJarvisVoice() {
         txtAiStatus.text = "Status AI: Jarvis te ascultă"
         txtJarvisSubtitle.text = "Listening, sir."
@@ -223,7 +274,7 @@ class JarvisDashboardActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == dashboardVoiceRequestCode && resultCode == RESULT_OK && data != null) {
+        if ((requestCode == dashboardVoiceRequestCode || requestCode == dashboardHandsFreeRequestCode) && resultCode == RESULT_OK && data != null) {
             val results = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)
             val spokenCommand = results?.firstOrNull()?.trim()
 
@@ -235,14 +286,21 @@ class JarvisDashboardActivity : Activity() {
                 if (intent.type == "conversation") {
                     txtAiStatus.text = "Status AI: conversație"
                     Toast.makeText(this, intent.spokenReply, Toast.LENGTH_LONG).show()
+                    if (requestCode == dashboardHandsFreeRequestCode) continueDashboardHandsFreeIfNeeded()
                 } else {
                     val finalCommand = intent.command.ifBlank { spokenCommand }
                     executeDirectCommand(finalCommand)
+                    if (requestCode == dashboardHandsFreeRequestCode) continueDashboardHandsFreeIfNeeded()
                 }
             } else {
                 jarvisVoiceManager.speak("Nu am detectat nicio comandă.")
                 txtJarvisSubtitle.text = "I did not hear a command, sir."
+                if (requestCode == dashboardHandsFreeRequestCode) continueDashboardHandsFreeIfNeeded()
             }
+        } else if (requestCode == dashboardHandsFreeRequestCode && dashboardHandsFreeActive) {
+            txtJarvisSubtitle.text = "I did not hear a command, sir."
+            jarvisVoiceManager.speak("I did not hear a command, sir.")
+            continueDashboardHandsFreeIfNeeded()
         }
     }
 

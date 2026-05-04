@@ -50,9 +50,14 @@ class MainActivity : Activity() {
 
     private val speechRequestCode = 1001
     private val jarvisVoiceRequestCode = 2001
+    private val jarvisHandsFreeRequestCode = 2002
     private val commandHistory = mutableListOf<String>()
     private lateinit var jarvisVoiceManager: JarvisVoiceManager
     private var voiceModeUseAi = false
+    private var handsFreeModeActive = false
+    private var handsFreeUseAi = false
+    private var handsFreeCommandCount = 0
+    private val maxHandsFreeCommands = 10
     private val smartVoiceInterpreter = SmartVoiceInterpreter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -447,6 +452,18 @@ class MainActivity : Activity() {
             startJarvisVoiceMode(useAi = true)
         })
 
+        layout.addView(button("Jarvis Hands Free") {
+            startJarvisHandsFree(useAi = false)
+        })
+
+        layout.addView(button("Jarvis Hands Free AI") {
+            startJarvisHandsFree(useAi = true)
+        })
+
+        layout.addView(button("Oprește Hands Free") {
+            stopJarvisHandsFree()
+        })
+
         layout.addView(button("Jarvis spune statusul") {
             val status = "Jarvis este online. Accessibility este " + if (JarvisAccessibilityService.instance == null) "inactiv" else "activ"
             resultText.text = status
@@ -524,6 +541,18 @@ class MainActivity : Activity() {
         })
         layout.addView(button("Status final Jarvis") {
             resultText.text = jarvisCompletionManager.getStatus()
+        })
+
+        addSection(layout, "Aplicații instalate")
+
+        layout.addView(button("Listează aplicațiile instalate") {
+            inputCommand.setText("listează aplicațiile instalate")
+            executeJarvisCommand()
+        })
+
+        layout.addView(button("Caută aplicația YouTube") {
+            inputCommand.setText("caută aplicația YouTube")
+            executeJarvisCommand()
         })
 
         addSection(layout, "Comenzi AI rapide")
@@ -1079,6 +1108,52 @@ class MainActivity : Activity() {
     }
 
 
+
+    private fun startJarvisHandsFree(useAi: Boolean) {
+        handsFreeModeActive = true
+        handsFreeUseAi = useAi
+        handsFreeCommandCount = 0
+
+        val message = if (useAi) {
+            "Jarvis Hands Free AI activ. Te ascult, sir."
+        } else {
+            "Jarvis Hands Free activ. Te ascult, sir."
+        }
+
+        resultText.text = message
+        jarvisVoiceManager.speak(message)
+        jarvisVoiceManager.listen(jarvisHandsFreeRequestCode)
+    }
+
+    private fun stopJarvisHandsFree() {
+        handsFreeModeActive = false
+        handsFreeUseAi = false
+
+        val message = "Hands Free oprit, sir."
+        resultText.text = message
+        jarvisVoiceManager.speak(message)
+    }
+
+    private fun continueHandsFreeIfNeeded() {
+        if (!handsFreeModeActive) return
+
+        handsFreeCommandCount++
+
+        if (handsFreeCommandCount >= maxHandsFreeCommands) {
+            handsFreeModeActive = false
+            val message = "Am oprit Hands Free după $maxHandsFreeCommands comenzi, pentru siguranță, sir."
+            resultText.text = message
+            jarvisVoiceManager.speak(message)
+            return
+        }
+
+        inputCommand.postDelayed({
+            if (handsFreeModeActive) {
+                jarvisVoiceManager.listen(jarvisHandsFreeRequestCode)
+            }
+        }, 1200)
+    }
+
     private fun startJarvisVoiceMode(useAi: Boolean) {
         voiceModeUseAi = useAi
 
@@ -1115,7 +1190,7 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if ((requestCode == speechRequestCode || requestCode == jarvisVoiceRequestCode) && resultCode == RESULT_OK && data != null) {
+        if ((requestCode == speechRequestCode || requestCode == jarvisVoiceRequestCode || requestCode == jarvisHandsFreeRequestCode) && resultCode == RESULT_OK && data != null) {
             val results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
             val spokenCommand = results?.firstOrNull()?.trim()
 
@@ -1123,22 +1198,28 @@ class MainActivity : Activity() {
                 inputCommand.setText(spokenCommand)
                 inputCommand.setSelection(inputCommand.text.length)
 
-                if (requestCode == jarvisVoiceRequestCode) {
+                if (requestCode == jarvisVoiceRequestCode || requestCode == jarvisHandsFreeRequestCode) {
+                    val isHandsFree = requestCode == jarvisHandsFreeRequestCode
+                    val useAiForThisCommand = if (isHandsFree) handsFreeUseAi else voiceModeUseAi
+
                     val intent = smartVoiceInterpreter.interpret(spokenCommand)
                     jarvisVoiceManager.speak(intent.spokenReply)
 
                     if (intent.type == "conversation") {
                         resultText.text = "Conversație Jarvis:\n$spokenCommand\n\nRăspuns:\n${intent.spokenReply}"
+                        if (isHandsFree) continueHandsFreeIfNeeded()
                     } else {
                         val finalCommand = intent.command.ifBlank { spokenCommand }
                         inputCommand.setText(finalCommand)
                         inputCommand.setSelection(inputCommand.text.length)
 
-                        if (voiceModeUseAi) {
+                        if (useAiForThisCommand) {
                             executeWithAi()
                         } else {
                             executeDirectCommand(finalCommand)
                         }
+
+                        if (isHandsFree) continueHandsFreeIfNeeded()
                     }
                 } else {
                     executeDirectCommand(spokenCommand)
@@ -1146,10 +1227,23 @@ class MainActivity : Activity() {
             } else {
                 Toast.makeText(this, "Nu am detectat nicio comandă.", Toast.LENGTH_SHORT).show()
                 jarvisVoiceManager.speak("Nu am detectat nicio comandă.")
+                if (requestCode == jarvisHandsFreeRequestCode) continueHandsFreeIfNeeded()
             }
+        } else {
+            handleHandsFreeCancelled(requestCode)
         }
     }
 
+
+
+    private fun handleHandsFreeCancelled(requestCode: Int) {
+        if (requestCode != jarvisHandsFreeRequestCode) return
+        if (!handsFreeModeActive) return
+
+        resultText.text = "Nu am auzit comanda, sir. Ascult din nou."
+        jarvisVoiceManager.speak("Nu am auzit comanda, sir.")
+        continueHandsFreeIfNeeded()
+    }
 
     override fun onDestroy() {
         try {

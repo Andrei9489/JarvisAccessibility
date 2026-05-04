@@ -20,19 +20,131 @@ class JarvisBrain {
             )
         }
 
-        val youtubeIntent = detectYoutubeIntent(original, text)
-        if (youtubeIntent != null) return youtubeIntent
-
-        val chromeIntent = detectChromeIntent(original, text)
-        if (chromeIntent != null) return chromeIntent
-
-        val appIntent = detectOpenAppIntent(original, text)
-        if (appIntent != null) return appIntent
+        detectInstalledAppsIntent(original, text)?.let { return it }
+        detectWebsiteIntent(original, text)?.let { return it }
+        detectPlatformSearchIntent(original, text)?.let { return it }
+        detectYoutubeIntent(original, text)?.let { return it }
+        detectChromeIntent(original, text)?.let { return it }
+        detectUniversalOpenAppIntent(original, text)?.let { return it }
 
         return BrainResult(
             type = "command",
             command = original,
             reply = "Am înțeles, sir."
+        )
+    }
+
+    private fun detectWebsiteIntent(original: String, text: String): BrainResult? {
+        val wantsWebsite =
+            text.contains("site") ||
+                text.contains("website") ||
+                text.contains("web site") ||
+                text.contains(".com") ||
+                text.contains(".ro") ||
+                text.contains(".net") ||
+                text.contains(".org")
+
+        if (!wantsWebsite) return null
+
+        var target = original
+            .replace("intră pe site-ul", "", ignoreCase = true)
+            .replace("intra pe site-ul", "", ignoreCase = true)
+            .replace("intră pe site", "", ignoreCase = true)
+            .replace("intra pe site", "", ignoreCase = true)
+            .replace("deschide site-ul", "", ignoreCase = true)
+            .replace("deschide site", "", ignoreCase = true)
+            .replace("deschide website-ul", "", ignoreCase = true)
+            .replace("deschide website", "", ignoreCase = true)
+            .replace("open website", "", ignoreCase = true)
+            .replace("open site", "", ignoreCase = true)
+            .trim()
+            .trim('.', ',', '?', ' ')
+
+        if (target.isBlank()) {
+            return BrainResult(
+                type = "conversation",
+                command = "",
+                reply = "Spune-mi ce website vrei să deschid, sir."
+            )
+        }
+
+        if (!target.startsWith("http://", ignoreCase = true) &&
+            !target.startsWith("https://", ignoreCase = true)
+        ) {
+            target = "https://$target"
+        }
+
+        return BrainResult(
+            type = "command",
+            command = "caută $target",
+            reply = "Deschid website-ul $target, sir."
+        )
+    }
+
+    private fun detectPlatformSearchIntent(original: String, text: String): BrainResult? {
+        val platforms = mapOf(
+            "youtube" to "YouTube",
+            "yootube" to "YouTube",
+            "you tube" to "YouTube",
+            "tiktok" to "TikTok",
+            "tik tok" to "TikTok",
+            "instagram" to "Instagram",
+            "facebook" to "Facebook",
+            "netflix" to "Netflix",
+            "prime video" to "Prime Video",
+            "disney" to "Disney",
+            "spotify" to "Spotify",
+            "google" to "Google"
+        )
+
+        val platform = platforms.entries.firstOrNull { text.contains(it.key) }?.value ?: return null
+
+        val wantsSearch =
+            text.contains("cauta") ||
+                text.contains("caută") ||
+                text.contains("search") ||
+                text.contains("gaseste") ||
+                text.contains("găsește") ||
+                text.contains("pune") ||
+                text.contains("play") ||
+                text.contains("video") ||
+                text.contains("film") ||
+                text.contains("serial") ||
+                text.contains("melodie") ||
+                text.contains("muzica") ||
+                text.contains("muzică") ||
+                text.contains("stire") ||
+                text.contains("știre") ||
+                text.contains("stiri") ||
+                text.contains("știri") ||
+                text.contains("content")
+
+        if (!wantsSearch) return null
+
+        val query = extractPlatformQuery(original, platform).ifBlank {
+            return BrainResult(
+                type = "command",
+                command = "deschide $platform",
+                reply = "Deschid $platform, sir."
+            )
+        }
+
+        val command = when (platform) {
+            "YouTube" -> "caută YouTube $query"
+            "TikTok" -> "caută TikTok $query"
+            "Instagram" -> "caută Instagram $query"
+            "Facebook" -> "caută Facebook $query"
+            "Netflix" -> "caută Netflix $query"
+            "Prime Video" -> "caută Prime Video $query"
+            "Disney" -> "caută Disney Plus $query"
+            "Spotify" -> "caută Spotify $query"
+            else -> "caută $platform $query"
+        }
+
+        return BrainResult(
+            type = "command",
+            command = command,
+            reply = "Caut în $platform: $query, sir."
         )
     }
 
@@ -67,28 +179,25 @@ class JarvisBrain {
                 text.contains("știre") ||
                 text.contains("stiri") ||
                 text.contains("știri") ||
+                text.contains("video") ||
+                text.contains("film") ||
+                text.contains("serial") ||
                 text.contains("content")
 
         if (wantsSearch) {
-            val query = extractYoutubeQuery(original)
-
-            val finalQuery = if (query.isBlank()) {
-                "YouTube"
-            } else {
-                query
-            }
+            val query = extractYoutubeQuery(original).ifBlank { "YouTube" }
 
             return if (wantsChrome) {
                 BrainResult(
                     type = "command",
-                    command = "caută site:youtube.com $finalQuery",
-                    reply = "Caut pe YouTube în Google Chrome: $finalQuery, sir."
+                    command = "caută site:youtube.com $query",
+                    reply = "Caut pe YouTube în Google Chrome: $query, sir."
                 )
             } else {
                 BrainResult(
                     type = "command",
-                    command = "caută YouTube $finalQuery",
-                    reply = "Caut pe YouTube: $finalQuery, sir."
+                    command = "caută YouTube $query",
+                    reply = "Caut pe YouTube: $query, sir."
                 )
             }
         }
@@ -143,21 +252,36 @@ class JarvisBrain {
         )
     }
 
-    private fun detectOpenAppIntent(original: String, text: String): BrainResult? {
+    private fun detectUniversalOpenAppIntent(original: String, text: String): BrainResult? {
         val startsOpen =
             text.startsWith("deschide ") ||
                 text.startsWith("open ") ||
                 text.startsWith("porneste ") ||
-                text.startsWith("pornește ")
+                text.startsWith("pornește ") ||
+                text.startsWith("intra pe ") ||
+                text.startsWith("intră pe ") ||
+                text.startsWith("intra in ") ||
+                text.startsWith("intră în ") ||
+                text.startsWith("lanseaza ") ||
+                text.startsWith("lansează ")
 
         if (!startsOpen) return null
 
         val appName = original
+            .replaceFirst("deschide aplicația", "", ignoreCase = true)
+            .replaceFirst("deschide aplicatia", "", ignoreCase = true)
             .replaceFirst("deschide", "", ignoreCase = true)
             .replaceFirst("open", "", ignoreCase = true)
             .replaceFirst("pornește", "", ignoreCase = true)
             .replaceFirst("porneste", "", ignoreCase = true)
+            .replaceFirst("intră pe", "", ignoreCase = true)
+            .replaceFirst("intra pe", "", ignoreCase = true)
+            .replaceFirst("intră în", "", ignoreCase = true)
+            .replaceFirst("intra in", "", ignoreCase = true)
+            .replaceFirst("lansează", "", ignoreCase = true)
+            .replaceFirst("lanseaza", "", ignoreCase = true)
             .trim()
+            .trim('.', ',', '?', ' ')
 
         if (appName.isBlank()) return null
 
@@ -168,24 +292,38 @@ class JarvisBrain {
         )
     }
 
-    private fun extractYoutubeQuery(original: String): String {
+    private fun extractPlatformQuery(original: String, platform: String): String {
         var value = original.trim()
 
-        val phrases = listOf(
-            "caută în youtube",
-            "cauta in youtube",
-            "caută pe youtube",
-            "cauta pe youtube",
-            "search youtube for",
-            "search on youtube",
-            "pune pe youtube",
-            "play on youtube",
-            "deschide youtube si cauta",
-            "deschide youtube și caută",
-            "youtube",
-            "yootube",
-            "you tube",
-            "iutub",
+        val platformWords = when (platform) {
+            "YouTube" -> listOf("youtube", "yootube", "you tube", "iutub", "yt")
+            "TikTok" -> listOf("tiktok", "tik tok")
+            "Instagram" -> listOf("instagram")
+            "Facebook" -> listOf("facebook")
+            "Netflix" -> listOf("netflix")
+            "Prime Video" -> listOf("prime video")
+            "Disney" -> listOf("disney plus", "disney")
+            "Spotify" -> listOf("spotify")
+            else -> listOf(platform)
+        }
+
+        val phrases = mutableListOf(
+            "caută în",
+            "cauta in",
+            "caută pe",
+            "cauta pe",
+            "search in",
+            "search on",
+            "search",
+            "pune pe",
+            "pune",
+            "play on",
+            "play",
+            "găsește",
+            "gaseste",
+            "video",
+            "film",
+            "serial",
             "melodie",
             "muzică",
             "muzica",
@@ -196,11 +334,17 @@ class JarvisBrain {
             "content"
         )
 
+        phrases.addAll(platformWords)
+
         phrases.forEach {
             value = value.replace(it, "", ignoreCase = true).trim()
         }
 
         return cleanQuery(value)
+    }
+
+    private fun extractYoutubeQuery(original: String): String {
+        return extractPlatformQuery(original, "YouTube")
     }
 
     private fun extractSearchQuery(original: String): String {
