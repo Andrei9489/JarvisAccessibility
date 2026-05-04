@@ -1,0 +1,6 @@
+{
+  "serverVersionCode": 1,
+  "serverVersionName": "1.0.0",
+  "serverUrl": "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/termux-server/server.py",
+  "notes": "Server Jarvis Termux cu auto update."
+}
