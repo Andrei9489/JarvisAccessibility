@@ -20,6 +20,7 @@ class JarvisBrain {
             )
         }
 
+        detectOpenAppAndSearchIntent(original, text)?.let { return it }
         detectInstalledAppsIntent(original, text)?.let { return it }
         detectWebsiteIntent(original, text)?.let { return it }
         detectPlatformSearchIntent(original, text)?.let { return it }
@@ -32,6 +33,77 @@ class JarvisBrain {
             command = original,
             reply = "Am înțeles, sir."
         )
+    }
+
+
+
+    private fun detectOpenAppAndSearchIntent(original: String, text: String): BrainResult? {
+        val connectors = listOf(
+            " si cauta ",
+            " și caută ",
+            " si caută ",
+            " și cauta ",
+            " and search ",
+            " and look for "
+        )
+
+        val connector = connectors.firstOrNull { text.contains(it.trim()) || text.contains(it) }
+            ?: return null
+
+        val parts = original.split(
+            " și caută",
+            " si cauta",
+            " si caută",
+            " și cauta",
+            " and search",
+            " and look for",
+            ignoreCase = true,
+            limit = 2
+        )
+
+        if (parts.size < 2) return null
+
+        val openPart = parts[0].trim()
+        val searchPart = cleanQuery(parts[1])
+
+        if (searchPart.isBlank()) return null
+
+        val appName = openPart
+            .replaceFirst("deschide aplicația", "", ignoreCase = true)
+            .replaceFirst("deschide aplicatia", "", ignoreCase = true)
+            .replaceFirst("deschide", "", ignoreCase = true)
+            .replaceFirst("intră pe", "", ignoreCase = true)
+            .replaceFirst("intra pe", "", ignoreCase = true)
+            .replaceFirst("intră în", "", ignoreCase = true)
+            .replaceFirst("intra in", "", ignoreCase = true)
+            .replaceFirst("open", "", ignoreCase = true)
+            .replaceFirst("launch", "", ignoreCase = true)
+            .trim()
+
+        if (appName.isBlank()) return null
+
+        val canonicalApp = canonicalPlatformName(appName)
+
+        return BrainResult(
+            type = "command",
+            command = "deschide aplicația $canonicalApp și caută $searchPart",
+            reply = "Deschid $canonicalApp și caut $searchPart, sir."
+        )
+    }
+
+    private fun canonicalPlatformName(value: String): String {
+        val text = normalize(value)
+
+        return when {
+            text.contains("yootube") || text.contains("you tube") || text.contains("youtube") || text.contains("iutub") -> "YouTube"
+            text.contains("tik tok") || text.contains("tiktok") -> "TikTok"
+            text.contains("insta") || text.contains("instagram") -> "Instagram"
+            text.contains("netflix") -> "Netflix"
+            text.contains("spotify") -> "Spotify"
+            text.contains("chrome") || text.contains("google chrome") || text.contains("browser") -> "Chrome"
+            text.contains("facebook") || text.contains("face book") -> "Facebook"
+            else -> value.trim()
+        }
     }
 
 

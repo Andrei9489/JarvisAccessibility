@@ -1,7 +1,7 @@
 {
-  "versionCode": 67,
-  "versionName": "1.7.5",
+  "versionCode": 68,
+  "versionName": "1.7.6",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat auto-update la pornire pentru serverul Jarvis Termux localhost."
+  "notes": "Adăugat Open App And Search Inside pentru comenzi vocale de tip deschide aplicația și caută conținut."
 }

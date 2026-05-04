@@ -48,6 +48,53 @@ class JarvisController(
             return installedAppsManager.searchAppsText(appName)
         }
 
+
+        if (
+            (normalizedCommandForApps.startsWith("deschide aplicatia ") ||
+                normalizedCommandForApps.startsWith("deschide aplicația ") ||
+                normalizedCommandForApps.startsWith("deschide ") ||
+                normalizedCommandForApps.startsWith("intra pe ") ||
+                normalizedCommandForApps.startsWith("intră pe ")) &&
+            (normalizedCommandForApps.contains(" si cauta ") ||
+                normalizedCommandForApps.contains(" și caută ") ||
+                normalizedCommandForApps.contains(" si caută ") ||
+                normalizedCommandForApps.contains(" și cauta "))
+        ) {
+            val parts = original.split(
+                " și caută",
+                " si cauta",
+                " si caută",
+                " și cauta",
+                ignoreCase = true,
+                limit = 2
+            )
+
+            if (parts.size >= 2) {
+                val openPart = parts[0].trim()
+                val searchQuery = parts[1].trim()
+
+                val appName = openPart
+                    .replaceFirst("deschide aplicația", "", ignoreCase = true)
+                    .replaceFirst("deschide aplicatia", "", ignoreCase = true)
+                    .replaceFirst("deschide", "", ignoreCase = true)
+                    .replaceFirst("intră pe", "", ignoreCase = true)
+                    .replaceFirst("intra pe", "", ignoreCase = true)
+                    .trim()
+
+                val openResult = installedAppsManager.openApp(appName)
+
+                if (openResult.startsWith("Nu am găsit aplicația instalată")) {
+                    return openResult
+                }
+
+                Thread.sleep(1500)
+
+                val searchResult = executeCommand("caută $appName $searchQuery")
+
+                return "$openResult\nCaut în $appName: $searchQuery\n$searchResult"
+            }
+        }
+
         if (
             normalizedCommandForApps.startsWith("deschide aplicatia ") ||
             normalizedCommandForApps.startsWith("deschide aplicația ")
