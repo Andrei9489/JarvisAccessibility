@@ -13,7 +13,7 @@ class AiClient(
     private val openAiUrl = "https://api.openai.com/v1/chat/completions"
     private val openAiModel = "gpt-4o-mini"
 
-    private val geminiModel = "gemini-1.5-flash"
+    private val geminiModel = "gemini-1.5-flash-latest"
 
     fun sendCommandToAi(
         userCommand: String,

@@ -1,7 +1,7 @@
 {
-  "versionCode": 17,
-  "versionName": "1.2.2",
+  "versionCode": 18,
+  "versionName": "1.2.3",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat suport Gemini AI și selector OpenAI/Gemini."
+  "notes": "Fix Gemini model: folosește gemini-1.5-flash-latest."
 }
