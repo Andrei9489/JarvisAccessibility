@@ -60,6 +60,36 @@ class JarvisController(
             return installedAppsManager.openApp(appName)
         }
 
+        if (
+            normalizedCommandForApps.startsWith("deschide ") ||
+            normalizedCommandForApps.startsWith("intra pe ") ||
+            normalizedCommandForApps.startsWith("intră pe ") ||
+            normalizedCommandForApps.startsWith("intra in ") ||
+            normalizedCommandForApps.startsWith("intră în ") ||
+            normalizedCommandForApps.startsWith("porneste ") ||
+            normalizedCommandForApps.startsWith("pornește ") ||
+            normalizedCommandForApps.startsWith("lanseaza ") ||
+            normalizedCommandForApps.startsWith("lansează ")
+        ) {
+            val appName = original
+                .replaceFirst("deschide", "", ignoreCase = true)
+                .replaceFirst("intră pe", "", ignoreCase = true)
+                .replaceFirst("intra pe", "", ignoreCase = true)
+                .replaceFirst("intră în", "", ignoreCase = true)
+                .replaceFirst("intra in", "", ignoreCase = true)
+                .replaceFirst("pornește", "", ignoreCase = true)
+                .replaceFirst("porneste", "", ignoreCase = true)
+                .replaceFirst("lansează", "", ignoreCase = true)
+                .replaceFirst("lanseaza", "", ignoreCase = true)
+                .trim()
+
+            val openResult = installedAppsManager.openApp(appName)
+
+            if (!openResult.startsWith("Nu am găsit aplicația instalată")) {
+                return openResult
+            }
+        }
+
 
         val command = normalize(original)
 

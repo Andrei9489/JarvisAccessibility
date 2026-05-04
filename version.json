@@ -1,7 +1,7 @@
 {
-  "versionCode": 65,
-  "versionName": "1.7.3",
+  "versionCode": 66,
+  "versionName": "1.7.4",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat Installed Apps Brain pentru listarea, găsirea și deschiderea aplicațiilor instalate prin voce."
+  "notes": "Reparat deschiderea aplicațiilor instalate: Jarvis încearcă aplicația instalată înainte de fallback Accessibility."
 }
