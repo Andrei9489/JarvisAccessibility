@@ -165,6 +165,18 @@ class AiClient(
             ACTION: wait(1200)
             ACTION: search("vremea azi")
 
+            Utilizator: caută pe YouTube o melodie cu Eminem
+            ACTION: search("YouTube melodie cu Eminem")
+
+            Utilizator: deschide YouTube
+            ACTION: open_app("YouTube")
+
+            Utilizator: deschide YouTube în Google Chrome
+            ACTION: search("youtube.com")
+
+            Utilizator: caută știri pe YouTube
+            ACTION: search("YouTube știri")
+
             Utilizator: mergi acasă și deschide aplicațiile recente
             ACTION: home()
             ACTION: wait(500)

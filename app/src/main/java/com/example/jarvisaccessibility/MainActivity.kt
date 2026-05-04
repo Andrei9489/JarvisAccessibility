@@ -43,6 +43,7 @@ class MainActivity : Activity() {
     private lateinit var jarvisPinManager: JarvisPinManager
     private lateinit var jarvisBackupManager: JarvisBackupManager
     private lateinit var jarvisCompletionManager: JarvisCompletionManager
+    private lateinit var termuxServerClient: TermuxServerClient
 
     private var lastReleaseUrl: String = "https://github.com/Andrei9489/JarvisAccessibility/releases"
     private var lastApkUrl: String = ""
@@ -67,6 +68,7 @@ class MainActivity : Activity() {
         jarvisPinManager = JarvisPinManager(this)
         jarvisBackupManager = JarvisBackupManager(this)
         jarvisCompletionManager = JarvisCompletionManager(this)
+        termuxServerClient = TermuxServerClient()
         jarvisVoiceManager = JarvisVoiceManager(this)
 
         val scrollView = ScrollView(this)
@@ -264,6 +266,65 @@ class MainActivity : Activity() {
             val message = aiDebugLogger.clearLog()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        addSection(layout, "Termux Server localhost")
+
+        layout.addView(button("Status server Termux") {
+            resultText.text = "Verific serverul Termux..."
+            termuxServerClient.getStatus { result ->
+                runOnUiThread {
+                    resultText.text = result
+                }
+            }
+        })
+
+        layout.addView(button("Verifică update server Termux") {
+            resultText.text = "Verific update server Termux..."
+            termuxServerClient.checkUpdate { result ->
+                runOnUiThread {
+                    resultText.text = result
+                }
+            }
+        })
+
+        layout.addView(button("Actualizează server Termux") {
+            resultText.text = "Instalez update server Termux..."
+            termuxServerClient.installUpdate { result ->
+                runOnUiThread {
+                    resultText.text = result
+                    Toast.makeText(this, "Dacă update-ul s-a instalat, repornește serverul Termux.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+
+        layout.addView(button("Trimite comanda la server") {
+            val command = inputCommand.text.toString().trim()
+
+            if (command.isBlank()) {
+                resultText.text = "Scrie o comandă înainte."
+                return@button
+            }
+
+            resultText.text = "Trimit la server: $command"
+            termuxServerClient.sendCommand(command) { result ->
+                runOnUiThread {
+                    resultText.text = result
+                }
+            }
+        })
+
+        layout.addView(button("Spune prin server Termux") {
+            val text = inputCommand.text.toString().trim().ifBlank {
+                "At your service, sir."
+            }
+
+            resultText.text = "Trimit voce la server: $text"
+            termuxServerClient.say(text) { result ->
+                runOnUiThread {
+                    resultText.text = result
+                }
+            }
         })
 
         addSection(layout, "Backup / setări Jarvis")

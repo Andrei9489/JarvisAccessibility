@@ -205,6 +205,28 @@
             android:layout_marginBottom="16dp" />
 
         <Button
+            android:id="@+id/btnTermuxServerStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status server Termux"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#020817"
+            android:backgroundTint="#22C55E"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnTermuxServerUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Update server Termux"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#020817"
+            android:backgroundTint="#FACC15"
+            android:layout_marginBottom="16dp" />
+
+        <Button
             android:id="@+id/btnOpenClassicJarvis"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

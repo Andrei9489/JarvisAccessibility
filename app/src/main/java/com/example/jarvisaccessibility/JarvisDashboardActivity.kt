@@ -23,6 +23,7 @@ class JarvisDashboardActivity : Activity() {
     private lateinit var jarvisVoiceManager: JarvisVoiceManager
     private val dashboardVoiceRequestCode = 3001
     private val smartVoiceInterpreter = SmartVoiceInterpreter()
+    private val termuxServerClient = TermuxServerClient()
 
     private val recentCommands = listOf(
         "deschide Chrome",
@@ -99,6 +100,30 @@ class JarvisDashboardActivity : Activity() {
 
         findViewById<Button>(R.id.btnStopAI).setOnClickListener {
             onStopAI()
+        }
+
+        findViewById<Button>(R.id.btnTermuxServerStatus).setOnClickListener {
+            txtAiStatus.text = "Status AI: verific server Termux"
+            txtJarvisSubtitle.text = "Checking Termux server, sir."
+
+            termuxServerClient.getStatus { result ->
+                runOnUiThread {
+                    txtJarvisSubtitle.text = result.take(180)
+                    txtAiStatus.text = "Status AI: server verificat"
+                }
+            }
+        }
+
+        findViewById<Button>(R.id.btnTermuxServerUpdate).setOnClickListener {
+            txtAiStatus.text = "Status AI: verific update server"
+            txtJarvisSubtitle.text = "Checking server update, sir."
+
+            termuxServerClient.checkUpdate { result ->
+                runOnUiThread {
+                    txtJarvisSubtitle.text = result.take(180)
+                    txtAiStatus.text = "Status AI: update server verificat"
+                }
+            }
         }
 
         findViewById<Button>(R.id.btnOpenClassicJarvis).setOnClickListener {

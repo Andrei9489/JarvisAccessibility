@@ -9,6 +9,7 @@ class SmartVoiceInterpreter {
     )
 
     private var lastMapTarget: String = ""
+    private val jarvisBrain = JarvisBrain()
 
     fun interpret(rawText: String): VoiceIntent {
         val original = rawText.trim()
@@ -32,6 +33,15 @@ class SmartVoiceInterpreter {
 
         val mapIntent = detectMapIntent(original, text)
         if (mapIntent != null) return mapIntent
+
+        val brainResult = jarvisBrain.think(original)
+        if (brainResult.type != "empty" && brainResult.command != original) {
+            return VoiceIntent(
+                type = brainResult.type,
+                command = brainResult.command,
+                spokenReply = brainResult.reply
+            )
+        }
 
         val transportIntent = detectTransportInfoIntent(original, text)
         if (transportIntent != null) return transportIntent
