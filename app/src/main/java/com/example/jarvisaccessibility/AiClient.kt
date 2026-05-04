@@ -14,7 +14,23 @@ class AiClient(
     private val openAiModel = "gpt-4o-mini"
 
     private val openRouterUrl = "https://openrouter.ai/api/v1/chat/completions"
-    private val openRouterModel = "mistralai/mistral-7b-instruct:free"
+
+    private val openRouterModels = listOf(
+        "openrouter/auto",
+        "openai/gpt-oss-20b:free",
+        "openai/gpt-oss-120b:free",
+        "google/gemma-3n-4b-it:free",
+        "google/gemma-3-4b-it:free",
+        "google/gemma-3-12b-it:free",
+        "google/gemma-3-27b-it:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "meta-llama/llama-3.2-3b-instruct:free",
+        "qwen/qwen3-next-80b-a3b-instruct:free",
+        "z-ai/glm-4.5-air:free",
+        "minimax/minimax-m2.5:free",
+        "nvidia/nemotron-3-nano-30b-a3b:free",
+        "liquid/lfm2.5-1.2b-instruct:free"
+    )
 
     private val geminiModel = "gemini-2.0-flash"
 
@@ -27,7 +43,7 @@ class AiClient(
                 val response = when (provider.lowercase()) {
                     "openai" -> sendToOpenAi(userCommand)
                     "gemini" -> sendToGemini(userCommand)
-                    else -> sendToOpenRouter(userCommand)
+                    else -> sendToOpenRouterWithFallback(userCommand)
                 }
 
                 callback(response, null)
@@ -52,21 +68,46 @@ class AiClient(
         return parseChatResponse(response)
     }
 
-    private fun sendToOpenRouter(userCommand: String): String {
-        val body = buildChatRequestBody(openRouterModel, userCommand)
+    private fun sendToOpenRouterWithFallback(userCommand: String): String {
+        val errors = StringBuilder()
 
-        val response = postJson(
-            urlString = openRouterUrl,
-            body = body,
-            headers = mapOf(
-                "Authorization" to "Bearer $apiKey",
-                "Content-Type" to "application/json",
-                "HTTP-Referer" to "https://github.com/Andrei9489/JarvisAccessibility",
-                "X-Title" to "Jarvis Accessibility"
-            )
+        for (model in openRouterModels) {
+            try {
+                val body = buildChatRequestBody(model, userCommand)
+
+                val response = postJson(
+                    urlString = openRouterUrl,
+                    body = body,
+                    headers = mapOf(
+                        "Authorization" to "Bearer $apiKey",
+                        "Content-Type" to "application/json",
+                        "HTTP-Referer" to "https://github.com/Andrei9489/JarvisAccessibility",
+                        "X-Title" to "Jarvis Accessibility"
+                    )
+                )
+
+                val action = parseChatResponse(response)
+
+                if (action.startsWith("ACTION:", ignoreCase = true)) {
+                    return action
+                }
+
+                errors.append(model)
+                    .append(": răspuns invalid: ")
+                    .append(action.take(120))
+                    .append("\n")
+
+            } catch (e: Exception) {
+                errors.append(model)
+                    .append(": ")
+                    .append(e.message ?: "eroare necunoscută")
+                    .append("\n")
+            }
+        }
+
+        throw Exception(
+            "Niciun model OpenRouter free nu a răspuns corect.\n\n$errors"
         )
-
-        return parseChatResponse(response)
     }
 
     private fun sendToGemini(userCommand: String): String {
@@ -104,6 +145,16 @@ class AiClient(
             ACTION: home()
             ACTION: recents()
             ACTION: search("vremea azi")
+            ACTION: click_text("OK")
+
+            Exemple:
+            Utilizator: deschide browserul
+            ACTION: open_app("Chrome")
+
+            Utilizator: caută vremea de azi
+            ACTION: search("vremea azi")
+
+            Utilizator: apasă pe OK
             ACTION: click_text("OK")
 
             Reguli de siguranță:
@@ -154,7 +205,6 @@ class AiClient(
         val generationConfig = JSONObject()
         generationConfig.put("temperature", 0)
         generationConfig.put("maxOutputTokens", 80)
-
         json.put("generationConfig", generationConfig)
 
         return json.toString()

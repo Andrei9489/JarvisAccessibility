@@ -1,7 +1,7 @@
 {
-  "versionCode": 20,
-  "versionName": "1.2.5",
+  "versionCode": 22,
+  "versionName": "1.2.7",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat OpenRouter AI provider cu model free."
+  "notes": "Adăugat fallback automat pe mai multe modele OpenRouter free."
 }
