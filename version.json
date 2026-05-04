@@ -1,7 +1,7 @@
 {
-  "versionCode": 4,
-  "versionName": "1.0.4",
+  "versionCode": 5,
+  "versionName": "1.0.5",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Butonul flotant Jarvis poate fi mutat pe ecran prin drag."
+  "notes": "Semnătură APK stabilă pentru update-uri directe din aplicație."
 }

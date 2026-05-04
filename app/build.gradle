@@ -11,8 +11,28 @@ android {
         applicationId = "com.example.jarvisaccessibility"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.0.4"
+        versionCode = 5
+        versionName = "1.0.5"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("jarvis-release-key.jks")
+            storePassword = "jarvis123"
+            keyAlias = "jarvis"
+            keyPassword = "jarvis123"
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("release")
+        }
+
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+        }
     }
 
     compileOptions {
