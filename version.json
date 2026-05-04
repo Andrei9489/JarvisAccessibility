@@ -1,7 +1,7 @@
 {
-  "versionCode": 58,
-  "versionName": "1.6.6",
+  "versionCode": 59,
+  "versionName": "1.6.7",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat Android Termux Server Bridge: status, update, comandă și voce prin server localhost."
+  "notes": "Permis traficul HTTP local către 127.0.0.1 pentru Termux Server Bridge."
 }
