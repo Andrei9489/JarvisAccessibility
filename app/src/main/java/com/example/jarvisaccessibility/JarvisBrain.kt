@@ -34,6 +34,52 @@ class JarvisBrain {
         )
     }
 
+
+    private fun detectInstalledAppsIntent(original: String, text: String): BrainResult? {
+        if (
+            text.contains("listeaza aplicatiile") ||
+            text.contains("listeaza aplicațiile") ||
+            text.contains("lista aplicatii") ||
+            text.contains("listă aplicații") ||
+            text.contains("ce aplicatii am") ||
+            text.contains("ce aplicații am") ||
+            text.contains("aplicatii instalate") ||
+            text.contains("aplicații instalate")
+        ) {
+            return BrainResult(
+                type = "command",
+                command = "listează aplicațiile instalate",
+                reply = "Listez aplicațiile instalate, sir."
+            )
+        }
+
+        if (
+            text.startsWith("cauta aplicatia ") ||
+            text.startsWith("cauta aplicația ") ||
+            text.startsWith("caută aplicatia ") ||
+            text.startsWith("caută aplicația ") ||
+            text.startsWith("gaseste aplicatia ") ||
+            text.startsWith("găsește aplicația ")
+        ) {
+            val appName = original
+                .replaceFirst("caută aplicația", "", ignoreCase = true)
+                .replaceFirst("caută aplicatia", "", ignoreCase = true)
+                .replaceFirst("cauta aplicația", "", ignoreCase = true)
+                .replaceFirst("cauta aplicatia", "", ignoreCase = true)
+                .replaceFirst("găsește aplicația", "", ignoreCase = true)
+                .replaceFirst("gaseste aplicatia", "", ignoreCase = true)
+                .trim()
+
+            return BrainResult(
+                type = "command",
+                command = "caută aplicația $appName",
+                reply = "Caut aplicația $appName, sir."
+            )
+        }
+
+        return null
+    }
+
     private fun detectWebsiteIntent(original: String, text: String): BrainResult? {
         val wantsWebsite =
             text.contains("site") ||
