@@ -27,8 +27,12 @@ class MainActivity : Activity() {
     private lateinit var statusText: TextView
     private lateinit var versionText: TextView
     private lateinit var historyText: TextView
+    private lateinit var aiStatusText: TextView
     private lateinit var updateManager: UpdateManager
     private lateinit var apiKeyManager: ApiKeyManager
+    private lateinit var aiDebugLogger: AiDebugLogger
+    private lateinit var aiStopManager: AiStopManager
+    private lateinit var aiPendingActionManager: AiPendingActionManager
 
     private var lastReleaseUrl: String = "https://github.com/Andrei9489/JarvisAccessibility/releases"
     private var lastApkUrl: String = ""
@@ -41,6 +45,9 @@ class MainActivity : Activity() {
 
         updateManager = UpdateManager(this)
         apiKeyManager = ApiKeyManager(this)
+        aiDebugLogger = AiDebugLogger(this)
+        aiStopManager = AiStopManager(this)
+        aiPendingActionManager = AiPendingActionManager(this)
 
         val scrollView = ScrollView(this)
 
@@ -72,6 +79,9 @@ class MainActivity : Activity() {
 
         resultText = normalText("Rezultat:")
         resultText.setPadding(0, 25, 0, 25)
+
+        aiStatusText = normalText("Status AI: pregătit")
+        aiStatusText.setPadding(0, 12, 0, 12)
 
         historyText = normalText("Istoric comenzi:\nGol")
         historyText.setPadding(0, 20, 0, 80)
@@ -163,6 +173,16 @@ class MainActivity : Activity() {
             resultText.text = apiKeyManager.getStatusText()
         })
 
+        layout.addView(button("Vezi AI debug log") {
+            resultText.text = aiDebugLogger.getLog()
+        })
+
+        layout.addView(button("Șterge AI debug log") {
+            val message = aiDebugLogger.clearLog()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
         addSection(layout, "Update aplicație")
         layout.addView(button("Verifică update") { checkUpdate() })
         layout.addView(button("Descarcă update") { downloadUpdate() })
@@ -179,10 +199,27 @@ class MainActivity : Activity() {
         })
 
         addSection(layout, "Comandă manuală / AI / vocală")
+        layout.addView(aiStatusText)
         layout.addView(inputCommand)
         layout.addView(button("Vorbește") { startVoiceInput() })
         layout.addView(button("Execută comanda") { executeJarvisCommand() })
         layout.addView(button("Execută cu AI") { executeWithAi() })
+        layout.addView(button("Oprește AI") {
+            val message = aiStopManager.requestStop()
+            aiStatusText.text = "Status AI: oprire cerută"
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Confirmă AI Action") {
+            confirmPendingAiAction()
+        })
+
+        layout.addView(button("Șterge AI Action Pending") {
+            val message = aiPendingActionManager.clearPendingAction()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
 
         layout.addView(button("Clear rezultat") {
             resultText.text = "Rezultat:"
@@ -242,6 +279,7 @@ class MainActivity : Activity() {
         val command = inputCommand.text.toString().trim()
 
         if (command.isBlank()) {
+            aiStatusText.text = "Status AI: comandă goală"
             resultText.text = "Scrie o comandă pentru AI."
             return
         }
@@ -255,6 +293,7 @@ class MainActivity : Activity() {
         }
 
         if (apiKey.isBlank()) {
+            aiStatusText.text = "Status AI: lipsește API key"
             resultText.text = "Lipsește API key pentru $provider. Pune cheia în câmp și apasă Salvează API Key."
             return
         }
@@ -262,10 +301,12 @@ class MainActivity : Activity() {
         val service = JarvisAccessibilityService.instance
 
         if (service == null) {
+            aiStatusText.text = "Status AI: Accessibility inactiv"
             resultText.text = "Serviciul Accessibility nu este activ."
             return
         }
 
+        aiStatusText.text = "Status AI: trimis la $provider"
         resultText.text = "AI procesează comanda cu provider: $provider..."
         Toast.makeText(this, "Trimit la AI...", Toast.LENGTH_SHORT).show()
 
@@ -278,10 +319,78 @@ class MainActivity : Activity() {
 
         orchestrator.executeWithAi(command) { result ->
             runOnUiThread {
+                aiStatusText.text = if (
+                    result.contains("Eroare AI", ignoreCase = true) ||
+                    result.contains("oprit", ignoreCase = true)
+                ) {
+                    "Status AI: oprit / eroare"
+                } else {
+                    "Status AI: finalizat"
+                }
+
                 resultText.text = result
                 addToHistory("AI $provider: $command")
+
+                aiDebugLogger.addLog(
+                    title = "AI command executed",
+                    details = """
+                        User command:
+                        $command
+
+                        Provider:
+                        $provider
+
+                        Result:
+                        $result
+                    """.trimIndent()
+                )
             }
         }
+    }
+
+
+    private fun confirmPendingAiAction() {
+        val service = JarvisAccessibilityService.instance
+
+        if (service == null) {
+            resultText.text = "Serviciul Accessibility nu este activ."
+            return
+        }
+
+        val provider = apiKeyManager.getAiProvider()
+        val apiKey = when (provider) {
+            "openai" -> apiKeyManager.getOpenAiKey()
+            "gemini" -> apiKeyManager.getGeminiKey()
+            else -> apiKeyManager.getOpenRouterKey()
+        }
+
+        if (apiKey.isBlank()) {
+            resultText.text = "Lipsește API key pentru $provider."
+            return
+        }
+
+        val aiClient = AiClient(
+            apiKey = apiKey,
+            provider = provider,
+            preferredOpenRouterModel = apiKeyManager.getOpenRouterModel()
+        )
+
+        val orchestrator = AiOrchestrator(
+            aiClient = aiClient,
+            controller = service.controller,
+            stopManager = aiStopManager,
+            pendingActionManager = aiPendingActionManager
+        )
+
+        aiStatusText.text = "Status AI: confirmare acțiune sensibilă"
+        val result = orchestrator.executePendingAction()
+        aiStatusText.text = "Status AI: acțiune confirmată"
+        resultText.text = "Confirmare AI Action:\n$result"
+
+        aiDebugLogger.addLog(
+            title = "AI pending action confirmed",
+            details = result
+        )
     }
 
     private fun titleText(text: String): TextView {

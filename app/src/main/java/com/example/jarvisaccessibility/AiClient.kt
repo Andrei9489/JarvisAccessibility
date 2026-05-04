@@ -70,7 +70,7 @@ class AiClient(
             )
         )
 
-        return AiResponse(parseChatResponse(response), "OpenAI", openAiModel)
+        return AiResponse(cleanActions(parseChatResponse(response)), "OpenAI", openAiModel)
     }
 
     private fun sendToOpenRouterWithFallback(userCommand: String): AiResponse {
@@ -94,9 +94,9 @@ class AiClient(
                     )
                 )
 
-                val action = parseChatResponse(response)
+                val action = cleanActions(parseChatResponse(response))
 
-                if (action.startsWith("ACTION:", ignoreCase = true)) {
+                if (action.lines().any { it.trim().startsWith("ACTION:", ignoreCase = true) }) {
                     return AiResponse(action, "OpenRouter", model)
                 }
 
@@ -125,18 +125,21 @@ class AiClient(
             headers = mapOf("Content-Type" to "application/json")
         )
 
-        return AiResponse(parseGeminiResponse(response), "Gemini", geminiModel)
+        return AiResponse(cleanActions(parseGeminiResponse(response)), "Gemini", geminiModel)
     }
 
     private fun systemPrompt(): String {
         return """
             Ești modulul AI pentru aplicația Android Jarvis Accessibility.
 
-            Răspunzi DOAR cu o singură acțiune.
+            Răspunzi DOAR cu acțiuni.
             Fără explicații.
             Fără Markdown.
             Fără JSON.
             Fără text suplimentar.
+
+            Poți răspunde cu 1 până la 5 linii ACTION.
+            Fiecare linie trebuie să înceapă cu ACTION:
 
             Format obligatoriu:
             ACTION: open_app("Chrome")
@@ -151,18 +154,25 @@ class AiClient(
             ACTION: recents()
             ACTION: search("vremea azi")
             ACTION: click_text("OK")
+            ACTION: wait(1000)
 
             Exemple:
             Utilizator: deschide browserul
             ACTION: open_app("Chrome")
 
-            Utilizator: caută vremea de azi
+            Utilizator: deschide Chrome și caută vremea azi
+            ACTION: open_app("Chrome")
+            ACTION: wait(1200)
             ACTION: search("vremea azi")
 
-            Utilizator: apasă pe OK
-            ACTION: click_text("OK")
+            Utilizator: mergi acasă și deschide aplicațiile recente
+            ACTION: home()
+            ACTION: wait(500)
+            ACTION: recents()
 
-            Reguli de siguranță:
+            Reguli:
+            - Maximum 5 acțiuni.
+            - Nu folosi alt text în afară de ACTION.
             - Nu controla aplicații bancare, parole, portofele, plăți sau autentificare.
             - Dacă utilizatorul cere banking, bani, card, parole, PIN, wallet sau plăți, răspunde:
               ACTION: blocked("financial_or_sensitive_app")
@@ -173,7 +183,7 @@ class AiClient(
         val json = JSONObject()
         json.put("model", model)
         json.put("temperature", 0)
-        json.put("max_tokens", 80)
+        json.put("max_tokens", 180)
 
         val messages = JSONArray()
 
@@ -209,7 +219,7 @@ class AiClient(
 
         val generationConfig = JSONObject()
         generationConfig.put("temperature", 0)
-        generationConfig.put("maxOutputTokens", 80)
+        generationConfig.put("maxOutputTokens", 180)
         json.put("generationConfig", generationConfig)
 
         return json.toString()
@@ -238,12 +248,7 @@ class AiClient(
 
         val code = connection.responseCode
 
-        val stream = if (code in 200..299) {
-            connection.inputStream
-        } else {
-            connection.errorStream
-        }
-
+        val stream = if (code in 200..299) connection.inputStream else connection.errorStream
         val response = stream.bufferedReader().use { it.readText() }
 
         if (code !in 200..299) {
@@ -269,5 +274,16 @@ class AiClient(
         val parts = content.getJSONArray("parts")
         val part = parts.getJSONObject(0)
         return part.getString("text").trim()
+    }
+
+    private fun cleanActions(raw: String): String {
+        return raw
+            .replace("```", "")
+            .lines()
+            .map { it.trim() }
+            .filter { it.startsWith("ACTION:", ignoreCase = true) }
+            .take(5)
+            .joinToString("\n")
+            .trim()
     }
 }
