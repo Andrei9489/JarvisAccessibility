@@ -117,6 +117,10 @@ class MainActivity : Activity() {
         layout.addView(versionText)
         layout.addView(statusText)
 
+        layout.addView(button("Deschide Jarvis Dashboard") {
+            startActivity(Intent(this, JarvisDashboardActivity::class.java))
+        })
+
         addSection(layout, "Setări")
         layout.addView(button("Deschide Accessibility Settings") {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))

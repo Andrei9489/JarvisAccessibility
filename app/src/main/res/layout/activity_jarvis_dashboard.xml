@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dashboardScroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#020817"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/dashboardRoot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="22dp"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:id="@+id/txtJarvisOnline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="JARVIS ONLINE"
+            android:textColor="#0EA5E9"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:letterSpacing="0.12"
+            android:paddingTop="22dp"
+            android:paddingBottom="10dp" />
+
+        <TextView
+            android:id="@+id/txtSubTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ACCESSIBILITY AI CONTROL SYSTEM"
+            android:textColor="#22C55E"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:letterSpacing="0.08"
+            android:paddingBottom="24dp" />
+
+        <FrameLayout
+            android:id="@+id/ringContainer"
+            android:layout_width="230dp"
+            android:layout_height="230dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="22dp"
+            android:foregroundGravity="center">
+
+            <View
+                android:id="@+id/jarvisRing"
+                android:layout_width="210dp"
+                android:layout_height="210dp"
+                android:layout_gravity="center"
+                android:background="@drawable/jarvis_ring" />
+
+            <TextView
+                android:id="@+id/txtRingCenter"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="AI\nCORE"
+                android:textColor="#FACC15"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:letterSpacing="0.15" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/txtAiStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status AI: pregătit"
+            android:textColor="#22C55E"
+            android:textSize="15sp"
+            android:fontFamily="monospace"
+            android:background="@drawable/jarvis_panel"
+            android:padding="14dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:id="@+id/txtPhoneStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Telefon: baterie -- | ora -- | conexiune --"
+            android:textColor="#0EA5E9"
+            android:textSize="14sp"
+            android:fontFamily="monospace"
+            android:background="@drawable/jarvis_panel"
+            android:padding="14dp"
+            android:layout_marginBottom="18dp" />
+
+        <TextView
+            android:id="@+id/txtRecentTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ultimele comenzi"
+            android:textColor="#FACC15"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:paddingTop="6dp"
+            android:paddingBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/recentCommandsList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/jarvis_panel"
+            android:padding="14dp"
+            android:layout_marginBottom="20dp" />
+
+        <TextView
+            android:id="@+id/txtActionsTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Comenzi rapide"
+            android:textColor="#FACC15"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnOpenChrome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Deschide Chrome"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#020817"
+            android:backgroundTint="#0EA5E9"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnOpenYouTube"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Deschide YouTube"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#020817"
+            android:backgroundTint="#0EA5E9"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnOpenTermux"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Deschide Termux"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#020817"
+            android:backgroundTint="#0EA5E9"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnExecuteAI"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Execută cu AI"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#020817"
+            android:backgroundTint="#22C55E"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnStopAI"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Oprește AI"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#020817"
+            android:backgroundTint="#FACC15"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnOpenClassicJarvis"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Deschide Jarvis Classic"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#0EA5E9"
+            android:backgroundTint="#111827"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnAccessibilitySettings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Accessibility Settings"
+            android:textAllCaps="false"
+            android:fontFamily="monospace"
+            android:textColor="#22C55E"
+            android:backgroundTint="#111827"
+            android:layout_marginBottom="30dp" />
+
+    </LinearLayout>
+
+</ScrollView>

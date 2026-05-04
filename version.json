@@ -1,7 +1,7 @@
 {
-  "versionCode": 51,
-  "versionName": "1.5.6",
+  "versionCode": 52,
+  "versionName": "1.6.0",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat status final Jarvis și marcaj 100% după checklist."
+  "notes": "Adăugat UI futurist Jarvis Dashboard cu ring animat, status AI, status telefon și comenzi rapide."
 }
