@@ -52,6 +52,7 @@ class MainActivity : Activity() {
     private val commandHistory = mutableListOf<String>()
     private lateinit var jarvisVoiceManager: JarvisVoiceManager
     private var voiceModeUseAi = false
+    private val smartVoiceInterpreter = SmartVoiceInterpreter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -1062,12 +1063,21 @@ class MainActivity : Activity() {
                 inputCommand.setSelection(inputCommand.text.length)
 
                 if (requestCode == jarvisVoiceRequestCode) {
-                    jarvisVoiceManager.speak("Am înțeles: $spokenCommand")
+                    val intent = smartVoiceInterpreter.interpret(spokenCommand)
+                    jarvisVoiceManager.speak(intent.spokenReply)
 
-                    if (voiceModeUseAi) {
-                        executeWithAi()
+                    if (intent.type == "conversation") {
+                        resultText.text = "Conversație Jarvis:\n$spokenCommand\n\nRăspuns:\n${intent.spokenReply}"
                     } else {
-                        executeDirectCommand(spokenCommand)
+                        val finalCommand = intent.command.ifBlank { spokenCommand }
+                        inputCommand.setText(finalCommand)
+                        inputCommand.setSelection(inputCommand.text.length)
+
+                        if (voiceModeUseAi) {
+                            executeWithAi()
+                        } else {
+                            executeDirectCommand(finalCommand)
+                        }
                     }
                 } else {
                     executeDirectCommand(spokenCommand)

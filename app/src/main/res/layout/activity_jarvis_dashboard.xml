@@ -114,6 +114,19 @@
             android:layout_marginBottom="20dp" />
 
         <TextView
+            android:id="@+id/txtJarvisSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="I'm online sir. How can I assist you today?"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:background="@drawable/jarvis_subtitle_panel"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
             android:id="@+id/txtActionsTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

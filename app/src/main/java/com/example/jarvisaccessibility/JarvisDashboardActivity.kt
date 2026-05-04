@@ -18,9 +18,11 @@ class JarvisDashboardActivity : Activity() {
     private lateinit var txtJarvisOnline: TextView
     private lateinit var txtAiStatus: TextView
     private lateinit var txtPhoneStatus: TextView
+    private lateinit var txtJarvisSubtitle: TextView
     private lateinit var recentCommandsList: LinearLayout
     private lateinit var jarvisVoiceManager: JarvisVoiceManager
     private val dashboardVoiceRequestCode = 3001
+    private val smartVoiceInterpreter = SmartVoiceInterpreter()
 
     private val recentCommands = listOf(
         "deschide Chrome",
@@ -43,6 +45,7 @@ class JarvisDashboardActivity : Activity() {
         txtJarvisOnline = findViewById(R.id.txtJarvisOnline)
         txtAiStatus = findViewById(R.id.txtAiStatus)
         txtPhoneStatus = findViewById(R.id.txtPhoneStatus)
+        txtJarvisSubtitle = findViewById(R.id.txtJarvisSubtitle)
         recentCommandsList = findViewById(R.id.recentCommandsList)
 
         val jarvisRing = findViewById<android.view.View>(R.id.jarvisRing)
@@ -167,6 +170,7 @@ class JarvisDashboardActivity : Activity() {
 
         Toast.makeText(this, result, Toast.LENGTH_LONG).show()
         jarvisVoiceManager.speak(result)
+        txtJarvisSubtitle.text = result.take(160)
         txtAiStatus.text = "Status AI: finalizat"
         txtPhoneStatus.text = buildPhoneStatusText()
     }
@@ -186,6 +190,7 @@ class JarvisDashboardActivity : Activity() {
 
     private fun onJarvisVoice() {
         txtAiStatus.text = "Status AI: Jarvis te ascultă"
+        txtJarvisSubtitle.text = "Listening, sir."
         jarvisVoiceManager.listen(dashboardVoiceRequestCode)
     }
 
@@ -198,10 +203,20 @@ class JarvisDashboardActivity : Activity() {
             val spokenCommand = results?.firstOrNull()?.trim()
 
             if (!spokenCommand.isNullOrBlank()) {
-                jarvisVoiceManager.speak("Am înțeles: $spokenCommand")
-                executeDirectCommand(spokenCommand)
+                val intent = smartVoiceInterpreter.interpret(spokenCommand)
+                jarvisVoiceManager.speak(intent.spokenReply)
+                txtJarvisSubtitle.text = intent.spokenReply
+
+                if (intent.type == "conversation") {
+                    txtAiStatus.text = "Status AI: conversație"
+                    Toast.makeText(this, intent.spokenReply, Toast.LENGTH_LONG).show()
+                } else {
+                    val finalCommand = intent.command.ifBlank { spokenCommand }
+                    executeDirectCommand(finalCommand)
+                }
             } else {
                 jarvisVoiceManager.speak("Nu am detectat nicio comandă.")
+                txtJarvisSubtitle.text = "I did not hear a command, sir."
             }
         }
     }

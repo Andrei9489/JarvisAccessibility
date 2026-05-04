@@ -1,7 +1,7 @@
 {
-  "versionCode": 53,
-  "versionName": "1.6.1",
+  "versionCode": 56,
+  "versionName": "1.6.4",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat Jarvis Voice Mode: ascultare vocală, executare comenzi și răspuns vocal."
+  "notes": "Adăugat Hologram Companion Intelligence cu subtitrare Jarvis, întrebări de informații și răspunsuri conversaționale."
 }
