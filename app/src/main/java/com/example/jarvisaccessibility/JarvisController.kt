@@ -19,6 +19,34 @@ class JarvisController(
         }
 
         return when {
+            command == "aplicatia curenta" ||
+                command == "aplicația curentă" ||
+                command == "package curent" ||
+                command == "pachet curent" -> {
+                val pkg = service.currentPackageName ?: "necunoscut"
+                val blocked = appSafetyManager.isBlockedPackage(pkg)
+
+                """
+                Aplicația curentă:
+                $pkg
+
+                Blocată:
+                ${if (blocked) "DA" else "NU"}
+                """.trimIndent()
+            }
+
+            command.startsWith("este blocat pachetul ") -> {
+                val packageName = original
+                    .replaceFirst("este blocat pachetul", "", ignoreCase = true)
+                    .trim()
+
+                if (packageName.isBlank()) {
+                    "Format corect: este blocat pachetul com.exemplu.app"
+                } else {
+                    appSafetyManager.checkBlockedPackage(packageName)
+                }
+            }
+
             command == "listeaza aplicatii instalate" ||
                 command == "listează aplicații instalate" ||
                 command == "lista aplicatii" ||

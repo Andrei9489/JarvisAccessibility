@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.speech.RecognizerIntent
+import android.text.InputType
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
@@ -20,11 +21,13 @@ import android.widget.Toast
 class MainActivity : Activity() {
 
     private lateinit var inputCommand: EditText
+    private lateinit var inputApiKey: EditText
     private lateinit var resultText: TextView
     private lateinit var statusText: TextView
     private lateinit var versionText: TextView
     private lateinit var historyText: TextView
     private lateinit var updateManager: UpdateManager
+    private lateinit var apiKeyManager: ApiKeyManager
 
     private var lastReleaseUrl: String = "https://github.com/Andrei9489/JarvisAccessibility/releases"
     private var lastApkUrl: String = ""
@@ -36,6 +39,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         updateManager = UpdateManager(this)
+        apiKeyManager = ApiKeyManager(this)
 
         val scrollView = ScrollView(this)
 
@@ -54,6 +58,12 @@ class MainActivity : Activity() {
         inputCommand.minLines = 2
         inputCommand.setPadding(20, 20, 20, 20)
 
+        inputApiKey = EditText(this)
+        inputApiKey.hint = "OpenAI API Key"
+        inputApiKey.setSingleLine(true)
+        inputApiKey.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        inputApiKey.setPadding(20, 20, 20, 20)
+
         resultText = normalText("Rezultat:")
         resultText.setPadding(0, 25, 0, 25)
 
@@ -67,6 +77,27 @@ class MainActivity : Activity() {
         addSection(layout, "Setări")
         layout.addView(button("Deschide Accessibility Settings") {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        })
+
+        addSection(layout, "AI API Key")
+        layout.addView(inputApiKey)
+        layout.addView(button("Salvează API Key") {
+            val message = apiKeyManager.saveOpenAiKey(inputApiKey.text.toString())
+            inputApiKey.setText("")
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+        layout.addView(button("Șterge API Key") {
+            val message = apiKeyManager.clearOpenAiKey()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+        layout.addView(button("Verifică API Key") {
+            resultText.text = if (apiKeyManager.hasOpenAiKey()) {
+                "API key este salvat."
+            } else {
+                "Nu există API key salvat."
+            }
         })
 
         addSection(layout, "Update aplicație")
@@ -84,10 +115,11 @@ class MainActivity : Activity() {
             Toast.makeText(this, "Buton flotant oprit", Toast.LENGTH_SHORT).show()
         })
 
-        addSection(layout, "Comandă manuală / vocală")
+        addSection(layout, "Comandă manuală / AI / vocală")
         layout.addView(inputCommand)
         layout.addView(button("Vorbește") { startVoiceInput() })
         layout.addView(button("Execută comanda") { executeJarvisCommand() })
+        layout.addView(button("Execută cu AI") { executeWithAi() })
         layout.addView(button("Clear rezultat") {
             resultText.text = "Rezultat:"
             inputCommand.setText("")
@@ -111,22 +143,16 @@ class MainActivity : Activity() {
         layout.addView(button("Recente") { executeDirectCommand("recente") })
         layout.addView(button("Despre aplicație") { showAbout() })
 
-        addSection(layout, "Exemple")
+        addSection(layout, "Exemple AI")
         layout.addView(normalText("""
-            deschide Chrome
-            deschide YouTube
-            deschide Termux
-            caută vremea azi
-            apasă pe OK
-            scrie salut
-            scroll jos
-            scroll sus
+            deschide browserul
+            caută vremea de azi
+            apasă pe butonul OK
+            scrie salut în câmpul selectat
+            fă scroll în jos
             citește ecranul
-            tap 500 800
-            swipe 500 1200 500 300
-            home
-            înapoi
-            recente
+            mergi acasă
+            deschide aplicațiile recente
         """.trimIndent()))
 
         addSection(layout, "Rezultat")
@@ -145,6 +171,42 @@ class MainActivity : Activity() {
         super.onResume()
         updateServiceStatus()
         updateVersionText()
+    }
+
+    private fun executeWithAi() {
+        val command = inputCommand.text.toString().trim()
+
+        if (command.isBlank()) {
+            resultText.text = "Scrie o comandă pentru AI."
+            return
+        }
+
+        val apiKey = apiKeyManager.getOpenAiKey()
+
+        if (apiKey.isBlank()) {
+            resultText.text = "Lipsește API key. Pune cheia în câmpul OpenAI API Key și apasă Salvează API Key."
+            return
+        }
+
+        val service = JarvisAccessibilityService.instance
+
+        if (service == null) {
+            resultText.text = "Serviciul Accessibility nu este activ."
+            return
+        }
+
+        resultText.text = "AI procesează comanda..."
+        Toast.makeText(this, "Trimit la AI...", Toast.LENGTH_SHORT).show()
+
+        val aiClient = AiClient(apiKey)
+        val orchestrator = AiOrchestrator(aiClient, service.controller)
+
+        orchestrator.executeWithAi(command) { result ->
+            runOnUiThread {
+                resultText.text = result
+                addToHistory("AI: $command")
+            }
+        }
     }
 
     private fun titleText(text: String): TextView {
@@ -216,6 +278,8 @@ class MainActivity : Activity() {
             Funcții:
             - comenzi scrise
             - comenzi vocale
+            - AI actions
+            - API key salvat local
             - citire ecran
             - control prin Accessibility
             - buton flotant

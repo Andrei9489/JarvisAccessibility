@@ -4,10 +4,23 @@ class AppSafetyManager {
 
     private val blockedAppNames = listOf(
         "mobile banking",
+        "mobile bank",
         "banking",
+        "bank",
         "banca",
         "bancă",
+        "my brd",
+        "brd",
+        "bt pay",
+        "bt24",
+        "neo bt",
+        "banca transilvania",
         "george",
+        "bcr",
+        "raiffeisen",
+        "smart mobile",
+        "ing homebank",
+        "homebank",
         "revolut",
         "paypal business",
         "paypal",
@@ -17,21 +30,33 @@ class AppSafetyManager {
         "pass",
         "portofel",
         "wallet",
-        "metamask"
+        "metamask",
+        "crypto",
+        "binance"
     )
 
     private val blockedPackageKeywords = listOf(
         "bank",
         "banking",
+        "mobilebanking",
+        "mobile.banking",
+        "banca",
+        "brd",
         "bcr",
         "bt24",
+        "bancatransilvania",
+        "transilvania",
         "raiffeisen",
         "ing",
+        "homebank",
         "george",
         "revolut",
         "paypal",
         "wallet",
+        "portofel",
         "metamask",
+        "binance",
+        "crypto",
         "samsungpass",
         "samsung.android.samsungpass",
         "upromania",
@@ -81,6 +106,14 @@ class AppSafetyManager {
         }
     }
 
+    fun checkBlockedPackage(packageNameRaw: String): String {
+        return if (isBlockedPackage(packageNameRaw)) {
+            "Da, pachetul este blocat: $packageNameRaw"
+        } else {
+            "Nu, pachetul nu este blocat: $packageNameRaw"
+        }
+    }
+
     private fun normalize(value: String): String {
         return value
             .trim()
@@ -92,5 +125,9 @@ class AppSafetyManager {
             .replace("ş", "s")
             .replace("ț", "t")
             .replace("ţ", "t")
+            .replace(" ", "")
+            .replace("-", "")
+            .replace("_", "")
+            .replace(".", "")
     }
 }
