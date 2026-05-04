@@ -226,6 +226,20 @@ class JarvisDashboardActivity : Activity() {
 
 
 
+
+    private fun logVoiceCommandToServer(command: String) {
+        if (command.isBlank()) return
+
+        try {
+            termuxServerClient.sendCommand(command) {
+                // Log silențios către localhost.
+            }
+        } catch (_: Exception) {
+            // Serverul poate fi oprit; dashboard-ul continuă local.
+        }
+    }
+
+
     private fun startDashboardHandsFree() {
         dashboardHandsFreeActive = true
         dashboardHandsFreeCount = 0
@@ -277,6 +291,9 @@ class JarvisDashboardActivity : Activity() {
         if ((requestCode == dashboardVoiceRequestCode || requestCode == dashboardHandsFreeRequestCode) && resultCode == RESULT_OK && data != null) {
             val results = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)
             val spokenCommand = results?.firstOrNull()?.trim()
+            if (!spokenCommand.isNullOrBlank()) {
+                logVoiceCommandToServer(spokenCommand)
+            }
 
             if (!spokenCommand.isNullOrBlank()) {
                 val intent = smartVoiceInterpreter.interpret(spokenCommand)

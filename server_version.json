@@ -1,8 +1,8 @@
 {
-  "serverVersionCode": 6,
-  "serverVersionName": "1.0.5",
+  "serverVersionCode": 7,
+  "serverVersionName": "1.0.6",
   "serverUrl": "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/termux-server/server.py",
-  "androidAppVersionCode": 71,
-  "androidAppVersionName": "1.7.9",
-  "notes": "Upgrade sincronizat: serverul salvează istoricul comenzilor vocale și expune /command-history."
+  "androidAppVersionCode": 72,
+  "androidAppVersionName": "1.8.0",
+  "notes": "Upgrade sincronizat: comenzile vocale din APK sunt trimise automat către localhost pentru istoric."
 }

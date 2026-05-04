@@ -1,9 +1,9 @@
 {
-  "versionCode": 71,
-  "versionName": "1.7.9",
+  "versionCode": 72,
+  "versionName": "1.8.0",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "serverVersionCode": 6,
-  "serverVersionName": "1.0.5",
-  "notes": "Upgrade sincronizat APK + localhost: istoric comenzi vocale în serverul Termux."
+  "serverVersionCode": 7,
+  "serverVersionName": "1.0.6",
+  "notes": "Upgrade sincronizat APK + localhost: comenzile vocale sunt trimise automat către server pentru istoric."
 }

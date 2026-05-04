@@ -1127,6 +1127,20 @@ class MainActivity : Activity() {
 
 
 
+
+    private fun logVoiceCommandToServer(command: String) {
+        if (command.isBlank()) return
+
+        try {
+            termuxServerClient.sendCommand(command) {
+                // Log silențios către localhost. Rezultatul rămâne în /command-history.
+            }
+        } catch (_: Exception) {
+            // Serverul localhost poate fi oprit; Jarvis continuă local.
+        }
+    }
+
+
     private fun startJarvisHandsFree(useAi: Boolean) {
         handsFreeModeActive = true
         handsFreeUseAi = useAi
