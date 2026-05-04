@@ -1,6 +1,6 @@
 {
-  "serverVersionCode": 2,
-  "serverVersionName": "1.0.1",
+  "serverVersionCode": 3,
+  "serverVersionName": "1.0.2",
   "serverUrl": "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/termux-server/server.py",
-  "notes": "Server Jarvis Termux cu Server Command Brain pentru YouTube, Chrome, status telefon, voce și căutări."
+  "notes": "Server Jarvis Termux cu timeout safety pentru Termux:API, ca status telefon și voce să nu blocheze serverul."
 }

@@ -11,23 +11,31 @@ app = Flask(__name__)
 START_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 LAST_COMMAND = ""
 
-LOCAL_SERVER_VERSION_CODE = 2
-LOCAL_SERVER_VERSION_NAME = "1.0.1"
+LOCAL_SERVER_VERSION_CODE = 3
+LOCAL_SERVER_VERSION_NAME = "1.0.2"
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/server_version.json"
 LOCAL_SERVER_PATH = os.path.abspath(__file__)
 
-def safe_shell(cmd):
+def safe_shell(cmd, timeout_seconds=8):
     try:
         result = subprocess.check_output(
             cmd,
             shell=True,
             stderr=subprocess.STDOUT,
-            timeout=15
+            timeout=timeout_seconds
         )
         return result.decode("utf-8", errors="ignore")
+    except subprocess.TimeoutExpired:
+        return (
+            "Termux:API nu răspunde. Instalează/deschide aplicația Android Termux:API "
+            "și dezactivează optimizarea bateriei pentru Termux și Termux:API."
+        )
     except subprocess.CalledProcessError as e:
-        return e.output.decode("utf-8", errors="ignore")
+        output = e.output.decode("utf-8", errors="ignore")
+        if "not found" in output:
+            return "Comanda Termux:API lipsește. Rulează: pkg install termux-api -y"
+        return output
     except Exception as e:
         return str(e)
 
@@ -57,7 +65,7 @@ def open_url(url):
     return url
 
 def speak_text(text):
-    return safe_shell(f'termux-tts-speak "{text}"')
+    return safe_shell(f'termux-tts-speak "{text}"', timeout_seconds=5)
 
 def extract_after_phrases(text, phrases):
     value = text.strip()
@@ -85,8 +93,8 @@ def interpret_command(text):
             "reply": "Checking device status, sir.",
             "action": "device",
             "result": {
-                "battery": safe_shell("termux-battery-status"),
-                "wifi": safe_shell("termux-wifi-connectioninfo"),
+                "battery": safe_shell("termux-battery-status", timeout_seconds=5),
+                "wifi": safe_shell("termux-wifi-connectioninfo", timeout_seconds=5),
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
         }
@@ -96,7 +104,7 @@ def interpret_command(text):
             "intent": "battery",
             "reply": "Checking battery, sir.",
             "action": "battery",
-            "result": safe_shell("termux-battery-status")
+            "result": safe_shell("termux-battery-status", timeout_seconds=5)
         }
 
     if "wifi" in clean or "wi-fi" in clean:
@@ -104,7 +112,7 @@ def interpret_command(text):
             "intent": "wifi",
             "reply": "Checking Wi-Fi, sir.",
             "action": "wifi",
-            "result": safe_shell("termux-wifi-connectioninfo")
+            "result": safe_shell("termux-wifi-connectioninfo", timeout_seconds=5)
         }
 
     if clean.startswith("spune ") or clean.startswith("say "):
@@ -369,8 +377,8 @@ def say():
 @app.route("/device")
 def device():
     return jsonify({
-        "battery": safe_shell("termux-battery-status"),
-        "wifi": safe_shell("termux-wifi-connectioninfo"),
+        "battery": safe_shell("termux-battery-status", timeout_seconds=5),
+        "wifi": safe_shell("termux-wifi-connectioninfo", timeout_seconds=5),
         "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
 
