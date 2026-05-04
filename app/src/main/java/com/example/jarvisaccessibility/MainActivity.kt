@@ -22,6 +22,7 @@ class MainActivity : Activity() {
 
     private lateinit var inputCommand: EditText
     private lateinit var inputApiKey: EditText
+    private lateinit var inputOpenRouterModel: EditText
     private lateinit var resultText: TextView
     private lateinit var statusText: TextView
     private lateinit var versionText: TextView
@@ -58,6 +59,11 @@ class MainActivity : Activity() {
         inputApiKey.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         inputApiKey.setPadding(20, 20, 20, 20)
 
+        inputOpenRouterModel = EditText(this)
+        inputOpenRouterModel.hint = "Model OpenRouter, ex: openrouter/auto"
+        inputOpenRouterModel.setSingleLine(true)
+        inputOpenRouterModel.setPadding(20, 20, 20, 20)
+
         inputCommand = EditText(this)
         inputCommand.hint = "Scrie comanda aici..."
         inputCommand.setSingleLine(false)
@@ -81,6 +87,7 @@ class MainActivity : Activity() {
 
         addSection(layout, "AI Provider + API Key")
         layout.addView(inputApiKey)
+        layout.addView(inputOpenRouterModel)
 
         layout.addView(button("Folosește OpenRouter") {
             val message = apiKeyManager.saveAiProvider("openrouter")
@@ -135,6 +142,19 @@ class MainActivity : Activity() {
 
         layout.addView(button("Șterge OpenAI API Key") {
             val message = apiKeyManager.clearOpenAiKey()
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Salvează model OpenRouter") {
+            val message = apiKeyManager.saveOpenRouterModel(inputOpenRouterModel.text.toString())
+            inputOpenRouterModel.setText("")
+            resultText.text = message
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        })
+
+        layout.addView(button("Șterge model OpenRouter") {
+            val message = apiKeyManager.clearOpenRouterModel()
             resultText.text = message
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         })
@@ -249,7 +269,11 @@ class MainActivity : Activity() {
         resultText.text = "AI procesează comanda cu provider: $provider..."
         Toast.makeText(this, "Trimit la AI...", Toast.LENGTH_SHORT).show()
 
-        val aiClient = AiClient(apiKey, provider)
+        val aiClient = AiClient(
+            apiKey = apiKey,
+            provider = provider,
+            preferredOpenRouterModel = apiKeyManager.getOpenRouterModel()
+        )
         val orchestrator = AiOrchestrator(aiClient, service.controller)
 
         orchestrator.executeWithAi(command) { result ->

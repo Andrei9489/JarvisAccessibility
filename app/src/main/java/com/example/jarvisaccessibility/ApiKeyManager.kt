@@ -32,6 +32,23 @@ class ApiKeyManager(
         return "OpenRouter API key salvat."
     }
 
+    fun saveOpenRouterModel(model: String): String {
+        val cleanModel = model.trim()
+        if (cleanModel.isBlank()) return "Modelul OpenRouter este gol."
+
+        prefs.edit().putString("openrouter_model", cleanModel).apply()
+        return "Model OpenRouter salvat: $cleanModel"
+    }
+
+    fun clearOpenRouterModel(): String {
+        prefs.edit().remove("openrouter_model").apply()
+        return "Modelul OpenRouter custom a fost șters. Se folosește fallback automat."
+    }
+
+    fun getOpenRouterModel(): String {
+        return prefs.getString("openrouter_model", "") ?: ""
+    }
+
     fun getOpenAiKey(): String {
         return prefs.getString("openai_api_key", "") ?: ""
     }
@@ -79,11 +96,14 @@ class ApiKeyManager(
     }
 
     fun getStatusText(): String {
+        val customModel = getOpenRouterModel()
+
         return """
             AI provider: ${getAiProvider()}
             OpenAI key: ${if (hasOpenAiKey()) "salvat" else "nesalvat"}
             Gemini key: ${if (hasGeminiKey()) "salvat" else "nesalvat"}
             OpenRouter key: ${if (hasOpenRouterKey()) "salvat" else "nesalvat"}
+            OpenRouter model: ${if (customModel.isBlank()) "fallback automat" else customModel}
         """.trimIndent()
     }
 }

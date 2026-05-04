@@ -1,7 +1,7 @@
 {
-  "versionCode": 22,
-  "versionName": "1.2.7",
+  "versionCode": 24,
+  "versionName": "1.2.9",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "notes": "Adăugat fallback automat pe mai multe modele OpenRouter free."
+  "notes": "Adăugat model OpenRouter custom cu fallback automat."
 }

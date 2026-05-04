@@ -5,9 +5,16 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
+data class AiResponse(
+    val action: String,
+    val provider: String,
+    val model: String
+)
+
 class AiClient(
     private val apiKey: String,
-    private val provider: String = "openrouter"
+    private val provider: String = "openrouter",
+    private val preferredOpenRouterModel: String = ""
 ) {
 
     private val openAiUrl = "https://api.openai.com/v1/chat/completions"
@@ -15,7 +22,7 @@ class AiClient(
 
     private val openRouterUrl = "https://openrouter.ai/api/v1/chat/completions"
 
-    private val openRouterModels = listOf(
+    private val defaultOpenRouterModels = listOf(
         "openrouter/auto",
         "openai/gpt-oss-20b:free",
         "openai/gpt-oss-120b:free",
@@ -36,7 +43,7 @@ class AiClient(
 
     fun sendCommandToAi(
         userCommand: String,
-        callback: (String?, String?) -> Unit
+        callback: (AiResponse?, String?) -> Unit
     ) {
         Thread {
             try {
@@ -53,31 +60,32 @@ class AiClient(
         }.start()
     }
 
-    private fun sendToOpenAi(userCommand: String): String {
-        val body = buildChatRequestBody(openAiModel, userCommand)
-
+    private fun sendToOpenAi(userCommand: String): AiResponse {
         val response = postJson(
             urlString = openAiUrl,
-            body = body,
+            body = buildChatRequestBody(openAiModel, userCommand),
             headers = mapOf(
                 "Authorization" to "Bearer $apiKey",
                 "Content-Type" to "application/json"
             )
         )
 
-        return parseChatResponse(response)
+        return AiResponse(parseChatResponse(response), "OpenAI", openAiModel)
     }
 
-    private fun sendToOpenRouterWithFallback(userCommand: String): String {
+    private fun sendToOpenRouterWithFallback(userCommand: String): AiResponse {
+        val models = buildList {
+            if (preferredOpenRouterModel.isNotBlank()) add(preferredOpenRouterModel)
+            addAll(defaultOpenRouterModels.filter { it != preferredOpenRouterModel })
+        }
+
         val errors = StringBuilder()
 
-        for (model in openRouterModels) {
+        for (model in models) {
             try {
-                val body = buildChatRequestBody(model, userCommand)
-
                 val response = postJson(
                     urlString = openRouterUrl,
-                    body = body,
+                    body = buildChatRequestBody(model, userCommand),
                     headers = mapOf(
                         "Authorization" to "Bearer $apiKey",
                         "Content-Type" to "application/json",
@@ -89,7 +97,7 @@ class AiClient(
                 val action = parseChatResponse(response)
 
                 if (action.startsWith("ACTION:", ignoreCase = true)) {
-                    return action
+                    return AiResponse(action, "OpenRouter", model)
                 }
 
                 errors.append(model)
@@ -105,22 +113,19 @@ class AiClient(
             }
         }
 
-        throw Exception(
-            "Niciun model OpenRouter free nu a răspuns corect.\n\n$errors"
-        )
+        throw Exception("Niciun model OpenRouter nu a răspuns corect.\n\n$errors")
     }
 
-    private fun sendToGemini(userCommand: String): String {
+    private fun sendToGemini(userCommand: String): AiResponse {
         val url = "https://generativelanguage.googleapis.com/v1beta/models/$geminiModel:generateContent?key=$apiKey"
-        val body = buildGeminiRequestBody(userCommand)
 
         val response = postJson(
             urlString = url,
-            body = body,
+            body = buildGeminiRequestBody(userCommand),
             headers = mapOf("Content-Type" to "application/json")
         )
 
-        return parseGeminiResponse(response)
+        return AiResponse(parseGeminiResponse(response), "Gemini", geminiModel)
     }
 
     private fun systemPrompt(): String {

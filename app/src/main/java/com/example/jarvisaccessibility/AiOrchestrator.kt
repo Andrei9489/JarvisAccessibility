@@ -14,23 +14,29 @@ class AiOrchestrator(
             return
         }
 
-        aiClient.sendCommandToAi(userText) { aiAction, error ->
+        aiClient.sendCommandToAi(userText) { aiResponse, error ->
             if (error != null) {
                 callback("Eroare AI:\n$error")
                 return@sendCommandToAi
             }
 
-            if (aiAction.isNullOrBlank()) {
+            if (aiResponse == null || aiResponse.action.isBlank()) {
                 callback("AI nu a returnat nicio acțiune.")
                 return@sendCommandToAi
             }
 
-            val result = interpretAiAction(aiAction)
+            val result = interpretAiAction(aiResponse.action)
 
             callback(
                 """
+                Provider:
+                ${aiResponse.provider}
+
+                Model folosit:
+                ${aiResponse.model}
+
                 AI:
-                $aiAction
+                ${aiResponse.action}
 
                 Rezultat:
                 $result
@@ -74,9 +80,7 @@ class AiOrchestrator(
                 if (numbers.size < 4) {
                     "Format AI invalid pentru swipe."
                 } else {
-                    controller.executeCommand(
-                        "swipe ${numbers[0]} ${numbers[1]} ${numbers[2]} ${numbers[3]}"
-                    )
+                    controller.executeCommand("swipe ${numbers[0]} ${numbers[1]} ${numbers[2]} ${numbers[3]}")
                 }
             }
 
