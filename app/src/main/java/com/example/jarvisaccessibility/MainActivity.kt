@@ -315,7 +315,12 @@ class MainActivity : Activity() {
             provider = provider,
             preferredOpenRouterModel = apiKeyManager.getOpenRouterModel()
         )
-        val orchestrator = AiOrchestrator(aiClient, service.controller)
+        val orchestrator = AiOrchestrator(
+            aiClient = aiClient,
+            controller = service.controller,
+            stopManager = aiStopManager,
+            pendingActionManager = aiPendingActionManager
+        )
 
         orchestrator.executeWithAi(command) { result ->
             runOnUiThread {
