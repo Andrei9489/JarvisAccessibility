@@ -1,2 +1,3 @@
 Build retry after accessibility swipe fix
 Retry build after swipe overload fix
+force publish 1.8.2 Tue May  5 13:55:08 EEST 2026
