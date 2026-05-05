@@ -1,9 +1,9 @@
 {
-  "versionCode": 72,
-  "versionName": "1.8.0",
+  "versionCode": 73,
+  "versionName": "1.8.1",
   "releaseUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases",
   "apkUrl": "https://github.com/Andrei9489/JarvisAccessibility/releases/latest/download/app-debug.apk",
-  "serverVersionCode": 7,
-  "serverVersionName": "1.0.6",
-  "notes": "Upgrade sincronizat APK + localhost: comenzile vocale sunt trimise automat către server pentru istoric."
+  "serverVersionCode": 8,
+  "serverVersionName": "1.0.7",
+  "notes": "Upgrade sincronizat APK + localhost: istoric separat pentru comenzile vocale Jarvis."
 }

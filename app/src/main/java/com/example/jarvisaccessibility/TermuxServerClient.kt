@@ -36,6 +36,13 @@ class TermuxServerClient {
         }
     }
 
+    fun sendVoiceCommand(command: String, callback: (String) -> Unit) {
+        val encoded = URLEncoder.encode(command, "UTF-8")
+        getAsync("$baseUrl/command?text=$encoded&source=voice") { raw ->
+            callback(prettyCommand(raw))
+        }
+    }
+
     fun say(text: String, callback: (String) -> Unit) {
         val encoded = URLEncoder.encode(text, "UTF-8")
         getAsync("$baseUrl/say?text=$encoded") { raw ->

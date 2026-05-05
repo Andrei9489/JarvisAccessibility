@@ -312,7 +312,7 @@ class MainActivity : Activity() {
             }
 
             resultText.text = "Trimit la server: $command"
-            termuxServerClient.sendCommand(command) { result ->
+            termuxServerClient.sendVoiceCommand(command) { result ->
                 runOnUiThread {
                     resultText.text = result
                 }
@@ -1132,7 +1132,7 @@ class MainActivity : Activity() {
         if (command.isBlank()) return
 
         try {
-            termuxServerClient.sendCommand(command) {
+            termuxServerClient.sendVoiceCommand(command) {
                 // Log silențios către localhost. Rezultatul rămâne în /command-history.
             }
         } catch (_: Exception) {

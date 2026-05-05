@@ -231,7 +231,7 @@ class JarvisDashboardActivity : Activity() {
         if (command.isBlank()) return
 
         try {
-            termuxServerClient.sendCommand(command) {
+            termuxServerClient.sendVoiceCommand(command) {
                 // Log silențios către localhost.
             }
         } catch (_: Exception) {

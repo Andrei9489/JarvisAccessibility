@@ -11,13 +11,14 @@ app = Flask(__name__)
 START_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 LAST_COMMAND = ""
 COMMAND_HISTORY = []
+VOICE_COMMAND_HISTORY = []
 AUTO_UPDATE_STATUS = "not_checked"
 
-LOCAL_SERVER_VERSION_CODE = 7
-LOCAL_SERVER_VERSION_NAME = "1.0.6"
+LOCAL_SERVER_VERSION_CODE = 8
+LOCAL_SERVER_VERSION_NAME = "1.0.7"
 
-ANDROID_APP_VERSION_CODE = 72
-ANDROID_APP_VERSION_NAME = "1.8.0"
+ANDROID_APP_VERSION_CODE = 73
+ANDROID_APP_VERSION_NAME = "1.8.1"
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/Andrei9489/JarvisAccessibility/main/server_version.json"
 LOCAL_SERVER_PATH = os.path.abspath(__file__)
@@ -65,6 +66,20 @@ def add_command_history(text, intent, reply):
 
     COMMAND_HISTORY.insert(0, item)
     COMMAND_HISTORY = COMMAND_HISTORY[:30]
+
+
+def add_voice_command_history(text, intent, reply):
+    global VOICE_COMMAND_HISTORY
+
+    item = {
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "text": text,
+        "intent": intent,
+        "reply": reply
+    }
+
+    VOICE_COMMAND_HISTORY.insert(0, item)
+    VOICE_COMMAND_HISTORY = VOICE_COMMAND_HISTORY[:30]
 
 def normalize(text):
     return (
@@ -370,9 +385,11 @@ def home():
             <p>Jarvis Termux Server: """ + LOCAL_SERVER_VERSION_NAME + """ (""" + str(LOCAL_SERVER_VERSION_CODE) + """)</p>
             <p>Auto update: """ + AUTO_UPDATE_STATUS + """</p>
             <p>Command history: """ + str(len(COMMAND_HISTORY)) + """</p>
+            <p>Voice history: """ + str(len(VOICE_COMMAND_HISTORY)) + """</p>
             <p>Endpoints:</p>
             <p><code>/status</code></p>
             <p><code>/command?text=hello</code></p>
+            <p><code>/voice-history</code></p>
             <p><code>/command-history</code></p>
             <p><code>/clear-history</code></p>
             <p><code>/say?text=hello sir</code></p>
@@ -392,6 +409,8 @@ def status():
         "started_at": START_TIME,
         "last_command": LAST_COMMAND,
         "commandHistoryCount": len(COMMAND_HISTORY),
+        "voiceCommandCount": len(VOICE_COMMAND_HISTORY),
+        "lastVoiceCommand": VOICE_COMMAND_HISTORY[0]["text"] if VOICE_COMMAND_HISTORY else "",
         "serverVersionCode": LOCAL_SERVER_VERSION_CODE,
         "serverVersionName": LOCAL_SERVER_VERSION_NAME,
         "androidAppVersionCode": ANDROID_APP_VERSION_CODE,
@@ -410,10 +429,14 @@ def command():
         text = request.args.get("text", "")
 
     text = text.strip()
+    source = request.args.get("source", "").strip().lower()
     LAST_COMMAND = text
 
     brain = interpret_command(text)
     add_command_history(text, brain.get("intent"), brain.get("reply"))
+
+    if source == "voice":
+        add_voice_command_history(text, brain.get("intent"), brain.get("reply"))
 
     return jsonify({
         "ok": True,
@@ -448,6 +471,15 @@ def device():
     })
 
 
+
+@app.route("/voice-history")
+def voice_history():
+    return jsonify({
+        "ok": True,
+        "count": len(VOICE_COMMAND_HISTORY),
+        "items": VOICE_COMMAND_HISTORY
+    })
+
 @app.route("/command-history")
 def command_history():
     return jsonify({
@@ -460,6 +492,7 @@ def command_history():
 def clear_history():
     global COMMAND_HISTORY
     COMMAND_HISTORY = []
+VOICE_COMMAND_HISTORY = []
 
     return jsonify({
         "ok": True,
