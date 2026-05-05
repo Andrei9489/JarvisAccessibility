@@ -117,6 +117,106 @@ class JarvisAccessibilityService : AccessibilityService() {
         return true
     }
 
+
+    fun clickNodeByText(text: String): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val nodes = root.findAccessibilityNodeInfosByText(text)
+
+        val node = nodes.firstOrNull { it.isVisibleToUser && it.isEnabled }
+            ?: nodes.firstOrNull()
+            ?: return false
+
+        var clickable: AccessibilityNodeInfo? = node
+        while (clickable != null && !clickable.isClickable) {
+            clickable = clickable.parent
+        }
+
+        return clickable?.performAction(AccessibilityNodeInfo.ACTION_CLICK) ?: false
+    }
+
+    fun scrollDown(): Boolean {
+        val root = rootInActiveWindow ?: return false
+        return performScroll(root, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+    }
+
+    fun scrollUp(): Boolean {
+        val root = rootInActiveWindow ?: return false
+        return performScroll(root, AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+    }
+
+    private fun performScroll(node: AccessibilityNodeInfo?, action: Int): Boolean {
+        if (node == null) return false
+
+        if (node.isScrollable && node.performAction(action)) {
+            return true
+        }
+
+        for (i in 0 until node.childCount) {
+            if (performScroll(node.getChild(i), action)) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    fun readScreenText(): String {
+        val root = rootInActiveWindow ?: return "Nu pot citi ecranul acum."
+        val builder = StringBuilder()
+        collectText(root, builder)
+
+        return builder.toString()
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString("\n")
+            .ifBlank { "Nu am găsit text pe ecran." }
+    }
+
+    private fun collectText(node: AccessibilityNodeInfo?, builder: StringBuilder) {
+        if (node == null) return
+
+        val text = node.text?.toString()
+        if (!text.isNullOrBlank()) {
+            builder.append(text).append("\n")
+        }
+
+        val description = node.contentDescription?.toString()
+        if (!description.isNullOrBlank()) {
+            builder.append(description).append("\n")
+        }
+
+        for (i in 0 until node.childCount) {
+            collectText(node.getChild(i), builder)
+        }
+    }
+
+    fun pressBack(): Boolean {
+        return performBack()
+    }
+
+    fun pressHome(): Boolean {
+        return performHome()
+    }
+
+    fun openRecents(): Boolean {
+        return performRecents()
+    }
+
+    fun swipe(startX: Float, startY: Float, endX: Float, endY: Float, duration: Long = 350): Boolean {
+        val path = Path().apply {
+            moveTo(startX, startY)
+            lineTo(endX, endY)
+        }
+
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, duration))
+            .build()
+
+        return dispatchGesture(gesture, null, null)
+    }
+
     fun performBack(): Boolean {
         return performGlobalAction(GLOBAL_ACTION_BACK)
     }
@@ -127,6 +227,11 @@ class JarvisAccessibilityService : AccessibilityService() {
 
     fun performRecents(): Boolean {
         return performGlobalAction(GLOBAL_ACTION_RECENTS)
+    }
+
+
+    fun tap(x: Int, y: Int): Boolean {
+        return tap(x.toFloat(), y.toFloat())
     }
 
     fun tap(x: Float, y: Float): Boolean {
