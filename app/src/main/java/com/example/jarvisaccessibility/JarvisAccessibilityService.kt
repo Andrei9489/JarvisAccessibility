@@ -204,6 +204,17 @@ class JarvisAccessibilityService : AccessibilityService() {
         return performRecents()
     }
 
+
+    fun swipe(startX: Int, startY: Int, endX: Int, endY: Int, duration: Long = 350): Boolean {
+        return swipe(
+            startX.toFloat(),
+            startY.toFloat(),
+            endX.toFloat(),
+            endY.toFloat(),
+            duration
+        )
+    }
+
     fun swipe(startX: Float, startY: Float, endX: Float, endY: Float, duration: Long = 350): Boolean {
         val path = Path().apply {
             moveTo(startX, startY)
