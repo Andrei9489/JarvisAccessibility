@@ -48,13 +48,26 @@ jobs:
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
 
-      - name: Create or update GitHub Release
+      - name: Create versioned GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version_name }}
           name: Jarvis Accessibility v${{ steps.version.outputs.version_name }}
           body: |
             Jarvis Accessibility APK
+
+            Version code: ${{ steps.version.outputs.version_code }}
+            Version name: ${{ steps.version.outputs.version_name }}
+          files: release/app-debug.apk
+          make_latest: true
+
+      - name: Publish APK to fixed latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Jarvis Accessibility APK
+          body: |
+            Latest Jarvis Accessibility APK
 
             Version code: ${{ steps.version.outputs.version_code }}
             Version name: ${{ steps.version.outputs.version_name }}
