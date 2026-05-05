@@ -60,6 +60,7 @@ jobs:
             Version name: ${{ steps.version.outputs.version_name }}
           files: release/app-debug.apk
           make_latest: true
+          overwrite_files: true
 
       - name: Publish APK to fixed latest release
         uses: softprops/action-gh-release@v2
@@ -73,3 +74,4 @@ jobs:
             Version name: ${{ steps.version.outputs.version_name }}
           files: release/app-debug.apk
           make_latest: true
+          overwrite_files: true
